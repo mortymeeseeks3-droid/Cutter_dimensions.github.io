@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Auto-Dimension Vector to PDF</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
+
+<style>
+  body {
+    margin: 0; background: #111; color: #eee;
+    font-family: sans-serif; display: flex; flex-direction: column;
+    height: 100vh; overflow: hidden;
+  }
+  #header {
+    background: #1a1a1a; padding: 20px; border-bottom: 2px solid #333;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  h1 { margin: 0; color: #d6d600; font-size: 1.5rem; }
+  .controls { display: flex; gap: 10px; align-items: center; }
+  input[type="file"] { background: #000; color: #eee; padding: 8px; border: 1px solid #444; border-radius: 4px; }
+  button {
+    padding: 10px 20px; background: #1a1a00; color: #d6d600;
+    border: 2px solid #d6d600; font-size: 14px; font-weight: bold;
+    cursor: pointer; border-radius: 5px; box-shadow: 0 3px 10px rgba(0,0,0,0.7); transition: 0.2s;
+  }
+  button:hover:not(:disabled) { background: #d6d600; color: #111; }
+  button:disabled { border-color: #555; color: #555; cursor: not-allowed; box-shadow: none; }
+  #status { color: #00ffff; font-size: 0.9rem; font-weight: bold; margin-right: 10px; }
+  
+  #workspace {
+    flex: 1; display: flex; justify-content: center; align-items: center;
+    background: #222; padding: 20px; overflow: auto; position: relative;
+  }
+  
+  #previewCanvas {
+    background: #111;
+    border: 1px solid #444;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+    max-width: 100%; max-height: 100%;
+  }
+  
+  #hiddenSvgContainer {
+    position: absolute; top: 0; left: 0; opacity: 0; pointer-events: none; z-index: -100;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>Cutter Dimensions</h1>
+  <div class="controls">
+    <span id="status">Upload a file...</span>
+    <input type="file" id="fileInput" accept=".svg, .pdf">
+    <button id="toggleDimsBtn" disabled>Show Dimensions</button>
+    <button id="downloadBtn" disabled>⬇ Download Annotated PDF</button>
+  </div>
+</div>
+
+<div id="workspace">
+  <canvas id="previewCanvas"></canvas>
+</div>
+
+<div id="hiddenSvgContainer"></div>
+
+<script>
+let S = {
+  mw: 0, mh: 0,
+  placed: []
+};
+
+let showPreviewDims = false;
+
+function fmt(v) { return (v%1===0 ? v.toString() : v.toFixed(2)); }
+
+const COL_OUTER_HEX = '#0d4cb2';
+const COL_OUTER_PDF = '0.05 0.30 0.70';
+const HEX_COLORS = ['#cc1919', '#199919', '#991999', '#cc7f19', '#199999', '#cccc19', '#666666'];
+const PDF_COLORS = ['0.80 0.10 0.10', '0.10 0.60 0.10', '0.60 0.10 0.60', '0.80 0.50 0.10', '0.10 0.60 0.60', '0.80 0.80 0.10', '0.40 0.40 0.40'];
+
+const fileInput = document.getElementById('fileInput');
+const toggleDimsBtn = document.getElementById('toggleDimsBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const canvas = document.getElementById('previewCanvas');
+const ctx = canvas.getContext('2d');
+const hiddenContainer = document.getElementById('hiddenSvgContainer');
+const statusText = document.getElementById('status');
+
+toggleDimsBtn.onclick = () => {
+  showPreviewDims = !showPreviewDims;
+  toggleDimsBtn.textContent = showPreviewDims ? "Hide Dimensions" : "Show Dimensions";
+  drawPreview();
+};
+
+fileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  downloadBtn.disabled = true;
+  toggleDimsBtn.disabled = true;
+  showPreviewDims = false;
+  toggleDimsBtn.textContent = "Show Dimensions";
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (file.name.toLowerCase().endsWith('.pdf')) {
+    statusText.textContent = "Extracting Vectors from PDF...";
+    await handlePdfUpload(file);
+  } else if (file.name.toLowerCase().endsWith('.svg')) {
+    statusText.textContent = "Parsing SVG...";
+    handleSvgUpload(file);
+  }
+});
+
+async function handlePdfUpload(file) {
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const typedarray = new Uint8Array(e.target.result);
+      const pdf = await pdfjsLib.getDocument(typedarray).promise;
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 1.0 }); 
+      const opList = await page.getOperatorList();
+      const svgGfx = new pdfjsLib.SVGGraphics(page.commonObjs, page.objs);
+      const svgElement = await svgGfx.getSVG(opList, viewport);
+      processDOMVector(svgElement, 25.4 / 72);
+    } catch (err) { statusText.textContent = "Error reading PDF."; }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function handleSvgUpload(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    hiddenContainer.innerHTML = e.target.result;
+    const svgElement = hiddenContainer.querySelector('svg');
+    if (!svgElement) { statusText.textContent = "Invalid SVG."; return; }
+    processDOMVector(svgElement, 25.4 / 96);
+  };
+  reader.readAsText(file);
+}
+
+function extractVertices(d, svgElement, ctm) {
+  let pts = [];
+  let commands = d.match(/[a-zA-Z][^a-zA-Z]*/g);
+  if (!commands) return pts;
+  let curX = 0, curY = 0;
+  
+  for (let cmdStr of commands) {
+    let cmd = cmdStr[0];
+    // Improved regex to handle scientific notation safely (e.g. 1.2e-4)
+    let matchArgs = cmdStr.slice(1).match(/[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?/g);
+    let args = matchArgs ? matchArgs.map(Number) : [];
+    
+    if (cmd === 'M' || cmd === 'L' || cmd === 'T') {
+      for(let i=0; i<args.length; i+=2) { curX = args[i]; curY = args[i+1]; pts.push({x:curX, y:curY}); }
+    } else if (cmd === 'm' || cmd === 'l' || cmd === 't') {
+      for(let i=0; i<args.length; i+=2) { curX += args[i]; curY += args[i+1]; pts.push({x:curX, y:curY}); }
+    } else if (cmd === 'H') {
+      for(let i=0; i<args.length; i++) { curX = args[i]; pts.push({x:curX, y:curY}); }
+    } else if (cmd === 'h') {
+      for(let i=0; i<args.length; i++) { curX += args[i]; pts.push({x:curX, y:curY}); }
+    } else if (cmd === 'V') {
+      for(let i=0; i<args.length; i++) { curY = args[i]; pts.push({x:curX, y:curY}); }
+    } else if (cmd === 'v') {
+      for(let i=0; i<args.length; i++) { curY += args[i]; pts.push({x:curX, y:curY}); }
+    } else if (cmd === 'C') {
+      for(let i=0; i<args.length; i+=6) { curX = args[i+4]; curY = args[i+5]; pts.push({x:curX, y:curY}); }
+    } else if (cmd === 'c') {
+      for(let i=0; i<args.length; i+=6) { curX += args[i+4]; curY += args[i+5]; pts.push({x:curX, y:curY}); }
+    } else if (cmd === 'S' || cmd === 'Q') {
+      for(let i=0; i<args.length; i+=4) { curX = args[i+2]; curY = args[i+3]; pts.push({x:curX, y:curY}); }
+    } else if (cmd === 's' || cmd === 'q') {
+      for(let i=0; i<args.length; i+=4) { curX += args[i+2]; curY += args[i+3]; pts.push({x:curX, y:curY}); }
+    } else if (cmd === 'A') {
+      for(let i=0; i<args.length; i+=7) { curX = args[i+5]; curY = args[i+6]; pts.push({x:curX, y:curY}); }
+    } else if (cmd === 'a') {
+      for(let i=0; i<args.length; i+=7) { curX += args[i+5]; curY += args[i+6]; pts.push({x:curX, y:curY}); }
+    }
+  }
+  
+  if (!ctm) return pts;
+  let transformedPts = [];
+  for (let p of pts) {
+    let pt = svgElement.createSVGPoint(); 
+    pt.x = p.x; pt.y = p.y;
+    let tp = pt.matrixTransform(ctm);
+    transformedPts.push({x: tp.x, y: tp.y});
+  }
+  return transformedPts;
+}
+
+function getRadiiFromPath(el, b, svgElement, ctm) {
+  if (el.tagName.toLowerCase() === 'rect') {
+    let rx = parseFloat(el.getAttribute('rx') || el.getAttribute('ry') || 0);
+    let scaleX = Math.sqrt(ctm.a*ctm.a + ctm.b*ctm.b);
+    rx = rx * scaleX;
+    return { tl: rx, tr: rx, br: rx, bl: rx };
+  } else if (el.tagName.toLowerCase() === 'circle' || el.tagName.toLowerCase() === 'ellipse') {
+    let r = Math.min(b.width, b.height) / 2;
+    return { tl: r, tr: r, br: r, bl: r };
+  }
+  
+  let d = el.getAttribute('d');
+  if (!d) return { tl: 0, tr: 0, br: 0, bl: 0 };
+  
+  let pts = extractVertices(d, svgElement, ctm);
+  if (pts.length === 0) return { tl: 0, tr: 0, br: 0, bl: 0 };
+  
+  let pMinX = b.x, pMaxX = b.x + b.width;
+  let pMinY = b.y, pMaxY = b.y + b.height;
+  let tol = 0.5; // Tolerance map
+  
+  let onLeft = pts.filter(p => Math.abs(p.x - pMinX) <= tol);
+  let onRight = pts.filter(p => Math.abs(p.x - pMaxX) <= tol);
+  let onTop = pts.filter(p => Math.abs(p.y - pMinY) <= tol);
+  let onBottom = pts.filter(p => Math.abs(p.y - pMaxY) <= tol);
+  
+  let rTL = 0, rTR = 0, rBR = 0, rBL = 0;
+  
+  if (onLeft.length) {
+    rTL = Math.max(rTL, Math.min(...onLeft.map(p => Math.abs(p.y - pMinY))));
+    rBL = Math.max(rBL, Math.min(...onLeft.map(p => Math.abs(pMaxY - p.y))));
+  }
+  if (onTop.length) {
+    rTL = Math.max(rTL, Math.min(...onTop.map(p => Math.abs(p.x - pMinX))));
+    rTR = Math.max(rTR, Math.min(...onTop.map(p => Math.abs(pMaxX - p.x))));
+  }
+  if (onRight.length) {
+    rTR = Math.max(rTR, Math.min(...onRight.map(p => Math.abs(p.y - pMinY))));
+    rBR = Math.max(rBR, Math.min(...onRight.map(p => Math.abs(pMaxY - p.y))));
+  }
+  if (onBottom.length) {
+    rBL = Math.max(rBL, Math.min(...onBottom.map(p => Math.abs(p.x - pMinX))));
+    rBR = Math.max(rBR, Math.min(...onBottom.map(p => Math.abs(pMaxX - p.x))));
+  }
+  
+  let maxR = Math.min(b.width, b.height) / 2;
+  return { 
+    tl: Math.min(rTL < 0.6 ? 0 : rTL, maxR), 
+    tr: Math.min(rTR < 0.6 ? 0 : rTR, maxR), 
+    br: Math.min(rBR < 0.6 ? 0 : rBR, maxR), 
+    bl: Math.min(rBL < 0.6 ? 0 : rBL, maxR) 
+  };
+}
+
+function processDOMVector(svgElement, pxToMm) {
+  hiddenContainer.innerHTML = '';
+  hiddenContainer.appendChild(svgElement);
+  
+  setTimeout(() => {
+    const graphicElements = svgElement.querySelectorAll('path, rect, circle, ellipse, polygon');
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let items = [], validElements = [];
+    let maxArea = 0;
+    
+    graphicElements.forEach(el => {
+      let bbox;
+      try { bbox = el.getBBox(); } catch(e) { return; }
+      
+      let ctm = el.getCTM();
+      try {
+        let rootCTM = svgElement.getScreenCTM();
+        let elCTM = el.getScreenCTM();
+        if (rootCTM && elCTM) {
+          ctm = rootCTM.inverse().multiply(elCTM); // Maps exact internal scale
+        }
+      } catch(e) { }
+
+      if (!ctm) return;
+      
+      let pts = [
+        {x: bbox.x, y: bbox.y},
+        {x: bbox.x + bbox.width, y: bbox.y},
+        {x: bbox.x, y: bbox.y + bbox.height},
+        {x: bbox.x + bbox.width, y: bbox.y + bbox.height}
+      ];
+
+      let tx = [], ty = [];
+      pts.forEach(p => {
+        let pt = svgElement.createSVGPoint(); pt.x = p.x; pt.y = p.y;
+        let tp = pt.matrixTransform(ctm);
+        tx.push(tp.x); ty.push(tp.y);
+      });
+
+      let b = {
+        x: Math.min(...tx),
+        y: Math.min(...ty),
+        width: Math.max(...tx) - Math.min(...tx),
+        height: Math.max(...ty) - Math.min(...ty)
+      };
+
+      let area = b.width * b.height;
+      if (area > maxArea) maxArea = area;
+      validElements.push({el, b, ctm});
+    });
+    
+    validElements.forEach(({el, b, ctm}) => {
+      if ((b.width < 0.1 && b.height < 0.1) || (el.tagName.toLowerCase() === 'rect' && (b.width * b.height) >= maxArea * 0.99)) return;
+      
+      let scaleX = Math.sqrt(ctm.a*ctm.a + ctm.b*ctm.b);
+      let dashAttr = el.getAttribute('stroke-dasharray') || el.style.strokeDasharray;
+      let dashPattern = null;
+      if (dashAttr && dashAttr !== 'none') {
+        let parts = dashAttr.split(/[\s,]+/).map(parseFloat).filter(n => !isNaN(n) && n > 0).map(v => v * scaleX);
+        if (parts.length > 0) dashPattern = parts;
+      }
+
+      let isDup = items.some(other => Math.abs(other.x - b.x) < 0.3 && Math.abs(other.y - b.y) < 0.3 && Math.abs(other.w - b.width) < 0.3 && Math.abs(other.h - b.height) < 0.3);
+      if (isDup) return;
+      
+      if (b.x < minX) minX = b.x; if (b.y < minY) minY = b.y; if (b.x + b.width > maxX) maxX = b.x + b.width; if (b.y + b.height > maxY) maxY = b.y + b.height;
+      items.push({ x: b.x, y: b.y, w: b.width, h: b.height, r: getRadiiFromPath(el, b, svgElement, ctm), dash: dashPattern });
+    });
+    
+    if (items.length === 0) { statusText.textContent = "No valid shapes found."; return; }
+    
+    S.mw = (maxX - minX) * pxToMm; 
+    S.mh = (maxY - minY) * pxToMm;
+    
+    items.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+    S.placed = [];
+    
+    items.forEach((item) => {
+      let p = { 
+        x: (item.x - minX) * pxToMm, 
+        y: (item.y - minY) * pxToMm, 
+        w: item.w * pxToMm, 
+        h: item.h * pxToMm, 
+        r: { tl: item.r.tl * pxToMm, tr: item.r.tr * pxToMm, br: item.r.br * pxToMm, bl: item.r.bl * pxToMm },
+        dash: item.dash ? item.dash.map(v => v * pxToMm) : null 
+      };
+      p.isCircle = (p.r.tl > 0 && Math.abs(p.r.tl - (p.w/2)) < 0.2 && Math.abs(p.w - p.h) < 0.5);
+      S.placed.push(p);
+    });
+    
+    statusText.textContent = "Ready!"; 
+    downloadBtn.disabled = false;
+    toggleDimsBtn.disabled = false;
+    drawPreview();
+  }, 100);
+}
+
+function drawPreview() {
+  const pad = 60, scale = Math.min((window.innerWidth - 150) / S.mw, (window.innerHeight - 250) / S.mh);
+  canvas.width = (S.mw * scale) + (pad * 2); canvas.height = (S.mh * scale) + (pad * 2);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save(); ctx.translate(pad, pad);
+  
+  function drawShape(p, color, fill) {
+    ctx.beginPath(); ctx.lineWidth = 2; ctx.strokeStyle = color;
+    
+    if (p.dash) ctx.setLineDash(p.dash.map(v => v * scale));
+    else ctx.setLineDash([]);
+
+    if (p.isCircle) { 
+      ctx.arc((p.x + p.w/2)*scale, (p.y + p.h/2)*scale, (p.w/2)*scale, 0, Math.PI*2); 
+      ctx.closePath();
+    } else if (p.w < 0.1 || p.h < 0.1) {
+      ctx.moveTo(p.x * scale, p.y * scale);
+      ctx.lineTo((p.x + p.w) * scale, (p.y + p.h) * scale);
+    } else {
+      let x=p.x*scale, y=p.y*scale, w=p.w*scale, h=p.h*scale, tl=p.r.tl*scale, tr=p.r.tr*scale, br=p.r.br*scale, bl=p.r.bl*scale;
+      ctx.moveTo(x + tl, y); ctx.lineTo(x + w - tr, y);
+      if(tr>0) ctx.arcTo(x + w, y, x + w, y + tr, tr); else ctx.lineTo(x + w, y);
+      ctx.lineTo(x + w, y + h - br);
+      if(br>0) ctx.arcTo(x + w, y + h, x + w - br, y + h, br); else ctx.lineTo(x + w, y + h);
+      ctx.lineTo(x + bl, y + h);
+      if(bl>0) ctx.arcTo(x, y + h, x, y + h - bl, bl); else ctx.lineTo(x, y + h);
+      ctx.lineTo(x, y + tl);
+      if(tl>0) ctx.arcTo(x, y, x + tl, y, tl); else ctx.lineTo(x, y);
+      ctx.closePath();
+    }
+    
+    if(fill && p.w > 0.1 && p.h > 0.1) { ctx.fillStyle = fill; ctx.fill(); }
+    ctx.stroke();
+    ctx.setLineDash([]); 
+  }
+  
+  S.placed.forEach((p, i) => {
+    let isOuter = (i === 0 && p.w > 0.1 && p.h > 0.1);
+    let col = isOuter ? COL_OUTER_HEX : HEX_COLORS[(i > 0 ? i - 1 : 0) % HEX_COLORS.length];
+    drawShape(p, col, col + "22");
+  });
+
+  if (showPreviewDims) {
+    ctx.font = "bold 13px sans-serif";
+    ctx.lineWidth = 1;
+    
+    function drawArrow(tx, ty, dx, dy) {
+      const len = 7, w = 2.5; 
+      const bx = tx - dx * len, by = ty - dy * len;
+      const px = -dy, py = dx;
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(bx + px * w, by + py * w);
+      ctx.lineTo(bx - px * w, by - py * w);
+      ctx.fill();
+    }
+
+    function drawHDim(x1, x2, y, val, color) {
+      ctx.strokeStyle = color; ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke();
+      drawArrow(x1, y, 1, 0); drawArrow(x2, y, -1, 0);
+      ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+      const tOff = Math.min(20, Math.abs(x2-x1)*0.2); 
+      ctx.fillText(val + 'mm', (x1+x2)/2 + tOff, y - 3);
+    }
+
+    function drawVDim(y1, y2, x, val, color) {
+      ctx.strokeStyle = color; ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x, y2); ctx.stroke();
+      drawArrow(x, y1, 0, 1); drawArrow(x, y2, 0, -1);
+      ctx.save();
+      ctx.translate(x - 5, (y1+y2)/2);
+      ctx.rotate(-Math.PI/2);
+      ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+      const tOff = Math.min(20, Math.abs(y2-y1)*0.2);
+      ctx.fillText(val + 'mm', -tOff, 0);
+      ctx.restore();
+    }
+    
+    function drawRDim(rx, ry, rw, rh, r, corner, color) {
+      if (r < 0.5) return;
+      let cx, cy, dx, dy;
+      let rS = r * scale;
+      if (corner === 'tl') { cx = rx+rS; cy = ry+rS; dx = -0.707; dy = -0.707; }
+      else if (corner === 'tr') { cx = rx+rw-rS; cy = ry+rS; dx = 0.707; dy = -0.707; }
+      else if (corner === 'br') { cx = rx+rw-rS; cy = ry+rh-rS; dx = 0.707; dy = 0.707; }
+      else if (corner === 'bl') { cx = rx+rS; cy = ry+rh-rS; dx = -0.707; dy = 0.707; }
+      
+      const ex = cx + dx*rS, ey = cy + dy*rS;
+      const tx = ex + dx*25, ty = ey + dy*25; 
+      
+      ctx.strokeStyle = color; ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(ex, ey); ctx.stroke();
+      drawArrow(ex, ey, -dx, -dy);
+      
+      ctx.textAlign = dx > 0 ? "left" : "right";
+      ctx.textBaseline = dy > 0 ? "top" : "bottom";
+      ctx.fillText('R'+fmt(r)+'mm', tx + (dx>0?4:-4), ty + (dy>0?4:-4));
+    }
+
+    S.placed.forEach((p, i) => {
+      let isOuter = (i === 0 && p.w > 0.1 && p.h > 0.1);
+      let col = isOuter ? COL_OUTER_HEX : HEX_COLORS[(i > 0 ? i - 1 : 0) % HEX_COLORS.length];
+      let px = p.x * scale, py = p.y * scale, pw = p.w * scale, ph = p.h * scale;
+      let pMidX = px + pw/2;
+      let pMidY = py + ph/2;
+      
+      if (isOuter) {
+         drawHDim(px, px + pw, py - 15, fmt(p.w), col);
+         drawVDim(py, py + ph, px - 15, fmt(p.h), col);
+         if (!p.isCircle) {
+           ['tl','tr','br','bl'].forEach(c => drawRDim(px, py, pw, ph, p.r[c], c, col));
+         }
+      } else {
+         if (p.w >= 0.1) drawHDim(px, px + pw, pMidY, fmt(p.w), col);
+         if (p.h >= 0.1) drawVDim(py, py + ph, pMidX, fmt(p.h), col);
+         
+         if (p.x >= 0.1) drawHDim(0, px, pMidY, fmt(p.x), col);
+         if (p.y >= 0.1) drawVDim(0, py, pMidX, fmt(p.y), col);
+
+         if (!p.isCircle && p.w >= 0.1 && p.h >= 0.1) {
+             ['tl','tr','br','bl'].forEach(c => drawRDim(px, py, pw, ph, p.r[c], c, col));
+         }
+      }
+
+      if (p.dash) {
+         let cut = fmt(p.dash[0]);
+         let tie = p.dash.length > 1 ? fmt(p.dash[1]) : cut;
+         ctx.fillStyle = col;
+         ctx.textAlign = "center";
+         ctx.fillText(`${cut}mm cut, ${tie}mm tie`, pMidX, pMidY + 15);
+      }
+    });
+  }
+  ctx.restore();
+}
+
+downloadBtn.onclick = () => {
+  const margin = 16, mm2pt = 2.8346, K = 0.5522847, ox = margin * mm2pt, oy = margin * mm2pt; 
+  const pW = (S.mw + margin * 2) * mm2pt, pH = (S.mh + margin * 2 + 60 + (S.placed.length * 8)) * mm2pt;
+  
+  function coord(x, y) { return x.toFixed(3) + ' ' + (pH - y).toFixed(3); }
+  const ops = ['0 0 0 RG 0 0 0 rg'];
+  
+  function setCol(c) { ops.push(c+' RG '+c+' rg'); }
+  function drawLine(x1,y1,x2,y2,lw) { if(lw) ops.push(lw+' w'); ops.push(coord(x1,y1)+' m '+coord(x2,y2)+' l S'); }
+  function arrowHead(tx,ty,dx,dy) { const len=1.8*mm2pt, w=0.6*mm2pt, bx=tx-dx*len, by=ty-dy*len, px=-dy, py=dx; ops.push(coord(tx,ty)+' m '+coord(bx+px*w,by+py*w)+' l '+coord(bx-px*w,by-py*w)+' l f'); }
+  function textAt(str, x, y, sz, align) { const safe = str.replace(/\(/g,'\\(').replace(/\)/g,'\\)'), aw = safe.length * sz * 0.52; let tx = align==='c' ? x-aw/2 : align==='r' ? x-aw : x; ops.push('BT /F1 '+sz+' Tf '+tx.toFixed(3)+' '+(pH-y-sz*0.35).toFixed(3)+' Td ('+safe+') Tj ET'); }
+  function textRot(str, x, y, sz) { const safe = str.replace(/\(/g,'\\(').replace(/\)/g,'\\)'), aw = safe.length * sz * 0.52; ops.push('BT /F1 '+sz+' Tf 0 1 -1 0 '+x.toFixed(3)+' '+(pH - y - aw/2).toFixed(3)+' Tm ('+safe+') Tj ET'); }
+
+  function hDim(x1, x2, y, label, sz) { 
+    const s = sz||7, mid = (x1+x2)/2; 
+    const tOff = Math.min(5 * mm2pt, Math.abs(x2-x1)*0.2); 
+    ops.push('0.25 w [] 0 d'); 
+    drawLine(x1, y, x2, y); 
+    arrowHead(x1, y, 1, 0); 
+    arrowHead(x2, y, -1, 0); 
+    textAt(label+'mm', mid + tOff, y+1*mm2pt, s, 'c'); 
+  }
+  function vDim(y1, y2, x, label, sz) { 
+    const s = sz||7, mid = (y1+y2)/2; 
+    const tOff = Math.min(5 * mm2pt, Math.abs(y2-y1)*0.2); 
+    ops.push('0.25 w [] 0 d'); 
+    drawLine(x, y1, x, y2); 
+    arrowHead(x, y1, 0, 1); 
+    arrowHead(x, y2, 0, -1); 
+    textRot(label+'mm', x-1.5*mm2pt, mid - tOff, s); 
+  }
+
+  function rDim(rx, ry, rw, rh, r, corner) {
+    if (r < 0.5) return;
+    let cx, cy, dx, dy;
+    if (corner === 'tl') { cx = rx+r; cy = ry+r; dx = -0.707; dy = -0.707; }
+    else if (corner === 'tr') { cx = rx+rw-r; cy = ry+r; dx = 0.707; dy = -0.707; }
+    else if (corner === 'br') { cx = rx+rw-r; cy = ry+rh-r; dx = 0.707; dy = 0.707; }
+    else if (corner === 'bl') { cx = rx+r; cy = ry+rh-r; dx = -0.707; dy = 0.707; }
+    const ex = cx + dx*r, ey = cy + dy*r, tx = ex + dx*4*mm2pt, ty = ey + dy*4*mm2pt;
+    ops.push('0.25 w [] 0 d'); 
+    drawLine(tx, ty, ex, ey); 
+    arrowHead(ex, ey, -dx, -dy);
+    textAt('R'+fmt(r/mm2pt)+'mm', tx + (dx>0?1:-1)*mm2pt, ty, 6, dx>0?'l':'r');
+  }
+
+  function ellPath(cx, cy, rx, ry) {
+    const kx = rx * K, ky = ry * K;
+    ops.push(coord(cx+rx, cy)+' m '+coord(cx+rx, cy-ky)+' '+coord(cx+kx, cy-ry)+' '+coord(cx, cy-ry)+' c '+coord(cx-kx, cy-ry)+' '+coord(cx-rx, cy-ky)+' '+coord(cx-rx, cy)+' c '+coord(cx-rx, cy+ky)+' '+coord(cx-kx, cy+ry)+' '+coord(cx, cy+ry)+' c '+coord(cx+kx, cy+ry)+' '+coord(cx+rx, cy+ky)+' '+coord(cx+rx, cy)+' c h S');
+  }
+
+  function rrPath(x, y, w, h, r) {
+    const k = 1-K;
+    ops.push(coord(x+r.tl, y)+' m '+coord(x+w-r.tr, y)+' l');
+    if(r.tr>0) ops.push(coord(x+w-r.tr*k, y)+' '+coord(x+w, y+r.tr*k)+' '+coord(x+w, y+r.tr)+' c'); else ops.push(coord(x+w, y)+' l');
+    ops.push(coord(x+w, y+h-r.br)+' l');
+    if(r.br>0) ops.push(coord(x+w, y+h-r.br*k)+' '+coord(x+w-r.br*k, y+h)+' '+coord(x+w-r.br, y+h)+' c'); else ops.push(coord(x+w, y+h)+' l');
+    ops.push(coord(x+r.bl, y+h)+' l');
+    if(r.bl>0) ops.push(coord(x+r.bl*k, y+h)+' '+coord(x, y+h-r.bl*k)+' '+coord(x, y+h-r.bl)+' c'); else ops.push(coord(x, y+h)+' l');
+    ops.push(coord(x, y+r.tl)+' l');
+    if(r.tl>0) ops.push(coord(x, y+r.tl*k)+' '+coord(x+r.tl*k, y)+' '+coord(x+r.tl, y)+' c'); else ops.push(coord(x, y)+' l');
+    ops.push('h S');
+  }
+
+  ops.push('0.6 w'); 
+  S.placed.forEach((r, i) => {
+    let isOuter = (i === 0 && r.w > 0.1 && r.h > 0.1);
+    let col = isOuter ? COL_OUTER_PDF : PDF_COLORS[(i > 0 ? i - 1 : 0) % PDF_COLORS.length];
+    setCol(col);
+    
+    if (r.dash) ops.push(`[${r.dash.map(v => (v*mm2pt).toFixed(2)).join(' ')}] 0 d`);
+    else ops.push('[] 0 d');
+
+    if (r.isCircle) {
+      ellPath(ox+(r.x+r.w/2)*mm2pt, oy+(r.y+r.h/2)*mm2pt, r.w*mm2pt/2, r.h*mm2pt/2);
+    } else if (r.w < 0.1 || r.h < 0.1) {
+      ops.push(coord(ox+r.x*mm2pt, oy+r.y*mm2pt) + ' m ' + coord(ox+(r.x+r.w)*mm2pt, oy+(r.y+r.h)*mm2pt) + ' l S');
+    } else {
+      rrPath(ox+r.x*mm2pt, oy+r.y*mm2pt, r.w*mm2pt, r.h*mm2pt, {tl:r.r.tl*mm2pt, tr:r.r.tr*mm2pt, br:r.r.br*mm2pt, bl:r.r.bl*mm2pt});
+    }
+    ops.push('[] 0 d');
+  });
+
+  ops.push('0.4 w'); 
+  S.placed.forEach((r, i) => { 
+    let isOuter = (i === 0 && r.w > 0.1 && r.h > 0.1);
+    let col = isOuter ? COL_OUTER_PDF : PDF_COLORS[(i > 0 ? i - 1 : 0) % PDF_COLORS.length];
+    setCol(col);
+
+    if (isOuter) {
+         hDim(ox+r.x*mm2pt, ox+(r.x+r.w)*mm2pt, oy+r.y*mm2pt - 6 * mm2pt, fmt(r.w), 8);
+         vDim(oy+r.y*mm2pt, oy+(r.y+r.h)*mm2pt, ox+r.x*mm2pt - 6 * mm2pt, fmt(r.h), 8);
+         if (!r.isCircle) {
+           ['tl','tr','br','bl'].forEach(c => rDim(ox+r.x*mm2pt, oy+r.y*mm2pt, r.w*mm2pt, r.h*mm2pt, r.r[c]*mm2pt, c));
+         }
+    } else {
+         const innerMidY = oy + (r.y + r.h / 2) * mm2pt;
+         const innerMidX = ox + (r.x + r.w / 2) * mm2pt;
+         
+         if (r.w >= 0.1) hDim(ox+r.x*mm2pt, ox+(r.x+r.w)*mm2pt, innerMidY, fmt(r.w), 6);
+         if (r.h >= 0.1) vDim(oy+r.y*mm2pt, oy+(r.y+r.h)*mm2pt, innerMidX, fmt(r.h), 6);
+         
+         if (r.x >= 0.1) hDim(ox, ox+r.x*mm2pt, innerMidY, fmt(r.x), 6);
+         if (r.y >= 0.1) vDim(oy, oy+r.y*mm2pt, innerMidX, fmt(r.y), 6);
+
+         if (!r.isCircle && r.w >= 0.1 && r.h >= 0.1) {
+           ['tl','tr','br','bl'].forEach(c => rDim(ox+r.x*mm2pt, oy+r.y*mm2pt, r.w*mm2pt, r.h*mm2pt, r.r[c]*mm2pt, c));
+         }
+    }
+  });
+
+  let curY = oy + S.mh * mm2pt + 15 * mm2pt; 
+  setCol('0 0 0'); textAt('MEASUREMENTS KEY:', ox, curY, 10, 'l'); curY += 8 * mm2pt;
+  function getRTxt(r) { let p = []; ['tl','tr','br','bl'].forEach(k => { if(r[k]>0.1) p.push(k.toUpperCase()+':'+fmt(r[k])); }); return p.length?'('+p.join(', ')+')':''; }
+  function drawL(col, txt, val) { setCol(col); ops.push(coord(ox, curY)+' m '+coord(ox+4*mm2pt, curY)+' l '+coord(ox+4*mm2pt, curY+4*mm2pt)+' l '+coord(ox, curY+4*mm2pt)+' l f'); setCol('0 0 0'); textAt(txt, ox+7*mm2pt, curY+3.5*mm2pt, 8, 'l'); if (val) textAt(val, ox+35*mm2pt, curY+3.5*mm2pt, 8, 'l'); curY += 7*mm2pt; }
+  
+  S.placed.forEach((r, i) => {
+    let isOuter = (i === 0 && r.w > 0.1 && r.h > 0.1);
+    let col = isOuter ? COL_OUTER_PDF : PDF_COLORS[(i > 0 ? i - 1 : 0) % PDF_COLORS.length];
+    
+    let dashStr = '';
+    if (r.dash) {
+      let cut = fmt(r.dash[0]);
+      let tie = r.dash.length > 1 ? fmt(r.dash[1]) : cut;
+      dashStr = ` (Dashed: ${cut}mm cut, ${tie}mm tie)`;
+    }
+
+    if (isOuter) {
+         if (r.isCircle) drawL(col, 'Outer Profile:', 'Diameter: ' + fmt(r.w) + 'mm' + dashStr);
+         else drawL(col, 'Outer Profile:', fmt(r.w)+'x'+fmt(r.h)+'mm '+getRTxt(r.r) + dashStr);
+    } else {
+         if (r.isCircle) drawL(col, 'Shape '+(i+1)+':', 'Diameter: ' + fmt(r.w) + 'mm' + dashStr);
+         else if (r.h < 0.1) drawL(col, 'Line '+(i+1)+':', 'Length: ' + fmt(r.w) + 'mm' + dashStr);
+         else if (r.w < 0.1) drawL(col, 'Line '+(i+1)+':', 'Length: ' + fmt(r.h) + 'mm' + dashStr);
+         else drawL(col, 'Shape '+(i+1)+':', fmt(r.w)+'x'+fmt(r.h)+'mm '+getRTxt(r.r) + dashStr);
+    }
+  });
+
+  const stream = ops.join('\n'), enc = new TextEncoder(), sLen = enc.encode(stream).length;
+  const header = '%PDF-1.4\n', s1 = '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n', s2 = '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n';
+  const s3 = '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pW.toFixed(3)+' '+pH.toFixed(3)+'] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n';
+  const s4 = '4 0 obj\n<< /Length '+sLen+' >>\nstream\n'+stream+'\nendstream\nendobj\n', s5 = '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n';
+  let pos = enc.encode(header).length; const o1 = pos; pos += enc.encode(s1).length; const o2 = pos; pos += enc.encode(s2).length; const o3 = pos; pos += enc.encode(s3).length; const o4 = pos; pos += enc.encode(s4).length; const o5 = pos; pos += enc.encode(s5).length;
+  const xref = 'xref\n0 6\n0000000000 65535 f \n'+o1.toString().padStart(10,'0')+' 00000 n \n'+o2.toString().padStart(10,'0')+' 00000 n \n'+o3.toString().padStart(10,'0')+' 00000 n \n'+o4.toString().padStart(10,'0')+' 00000 n \n'+o5.toString().padStart(10,'0')+' 00000 n \n';
+  const trailer = 'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+pos+'\n%%EOF';
+  const blob = new Blob([enc.encode(header), enc.encode(s1), enc.encode(s2), enc.encode(s3), enc.encode(s4), enc.encode(s5), enc.encode(xref), enc.encode(trailer)], {type:'application/pdf'}), url = URL.createObjectURL(blob), a = document.createElement('a');
+  document.body.appendChild(a); a.href=url; a.download='auto-dimensioned.pdf'; a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+};
+</script>
+</body>
+</html>
