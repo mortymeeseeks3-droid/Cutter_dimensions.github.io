@@ -186,12 +186,123 @@ body.studio-ui{height:100dvh;width:100vw;display:grid;grid-template-columns:66px
 @media(max-width:480px){.brandWords small{display:none}.spotChip small{display:none}#bar button{padding:6px;font-size:9px}.headerSpots{gap:4px}.spotChip{padding:3px 5px}}
 
 </style>
+
+<style id="previewBackgroundControlsStyle">
+#previewBgControls{position:absolute;z-index:7;left:12px;top:42px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;background:rgba(17,25,36,.94);border:1px solid #405166;border-radius:9px;box-shadow:0 5px 20px rgba(0,0,0,.24);color:#dce6f1;font:11px/1.2 system-ui,sans-serif;backdrop-filter:blur(8px);max-width:calc(100% - 24px);box-sizing:border-box}
+#previewBgControls .pbgLabel{font-size:10px;letter-spacing:.09em;font-weight:750;color:#a9b8ca;white-space:nowrap}
+#previewBgMode{width:145px;max-width:42vw;margin:0;padding:6px 8px;border-radius:6px;border:1px solid #4a5d73;background:#0c131c;color:#edf5ff;font:12px system-ui,sans-serif}
+#previewBgColour{width:30px!important;height:29px;padding:2px!important;margin:0!important;border-radius:6px;border:1px solid #4a5d73;background:#0c131c;cursor:pointer}
+#previewBgControls .pbgHint{font-size:10px;color:#8294a9;white-space:nowrap}
+@media(max-width:650px){#previewBgControls{top:70px;left:8px;right:8px;gap:6px;padding:7px 8px}#previewBgControls .pbgLabel{font-size:9px}#previewBgMode{flex:1;min-width:110px;font-size:11px}#previewBgControls .pbgHint{display:none}#status{top:8px!important;left:8px!important;right:8px!important;max-width:calc(100% - 16px);font-size:10px!important}}
+</style>
+
+<style id="topHeaderActionToolbarFix">
+/* Keep the preview-background selector and the actual Import/Export toolbar in the header. */
+#topHeader{min-height:82px;gap:12px;padding:8px 16px;box-sizing:border-box;flex-wrap:nowrap}
+.studio-ui{grid-template-rows:82px minmax(0,1fr)!important}
+.headerActionCluster{display:flex;align-items:center;justify-content:center;gap:10px;flex:1 1 auto;min-width:0;max-width:100%;}
+#previewBgControls{position:static!important;inset:auto!important;display:flex;align-items:center;gap:6px;flex:0 1 auto;width:auto;max-width:320px;padding:6px 8px;box-shadow:none;border-radius:7px;backdrop-filter:none;}
+#previewBgControls .pbgLabel{font-size:9px;}
+#previewBgMode{width:130px;max-width:150px;font-size:11px;padding:5px 6px;}
+#previewBgColour{width:27px!important;height:27px;flex:0 0 27px;}
+#previewBgControls .pbgHint{display:none;}
+#bar{position:static!important;inset:auto!important;display:flex;align-items:center;gap:5px;z-index:auto;flex:0 0 auto;white-space:nowrap;}
+#bar button{padding:7px 9px;font-size:11px;}
+#exp{position:relative;}
+#expMenu{position:absolute;top:calc(100% + 6px);right:0;z-index:30;min-width:250px;max-height:70vh;overflow:auto;background:#101923;border:1px solid #405166;border-radius:8px;padding:6px;box-shadow:0 10px 30px #0008;}
+#expMenu button{display:block;width:100%;text-align:left;white-space:normal;margin:2px 0;}
+.headerSpots{flex:0 0 auto;gap:6px;}
+.headerRight{flex:0 0 auto;}
+@media(max-width:1450px){#topHeader{gap:8px;padding:7px 10px}.brandMark{min-width:175px}.headerContext{min-width:130px}.headerContext small{display:none}.headerRight{display:none}#previewBgControls .pbgLabel{display:none}#previewBgMode{width:120px}}
+@media(max-width:1050px){#topHeader{min-height:112px;flex-wrap:wrap;align-content:center;row-gap:6px}.studio-ui{grid-template-rows:112px minmax(0,1fr)!important}.brandMark{min-width:160px}.headerDivider,.headerContext{display:none}.headerActionCluster{order:3;flex:1 1 100%;justify-content:center}.headerSpots{margin-left:auto}#previewBgControls{max-width:260px}}
+@media(max-width:650px){#topHeader{min-height:124px;padding:6px 8px}.studio-ui{grid-template-rows:124px minmax(0,1fr)!important}.headerActionCluster{gap:5px;flex-wrap:wrap}#previewBgControls{max-width:100%;padding:4px 6px}#previewBgControls .pbgLabel{display:inline;font-size:8px}#previewBgMode{width:112px;font-size:10px}#bar{gap:3px}#bar button{padding:5px 6px;font-size:10px}.headerSpots{display:none}}
+</style>
+
+
+<style id="v49-single-row-header-alignment">
+/* V49: keep the requested controls on the SAME row as the Cutter Maker title and 7/8 swatches. */
+body.studio-ui{grid-template-rows:72px minmax(0,1fr)!important}
+#topHeader{height:72px;min-height:72px!important;max-height:72px;flex-wrap:nowrap!important;align-content:initial;gap:14px;padding:0 18px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:thin}
+#topHeader .brandMark{flex:0 0 205px;min-width:205px}
+#topHeader .headerDivider,#topHeader .headerContext{display:none!important}
+#topHeader .headerActionCluster{order:initial!important;flex:1 1 auto!important;min-width:max-content;max-width:none;flex-wrap:nowrap!important;justify-content:center;gap:8px}
+#topHeader #previewBgControls{flex:0 0 auto;max-width:none;white-space:nowrap;padding:5px 7px;gap:5px}
+#topHeader #previewBgControls .pbgLabel{display:inline!important;font-size:9px}
+#topHeader #previewBgMode{width:135px;max-width:135px}
+#topHeader #bar{flex:0 0 auto;flex-wrap:nowrap!important;max-width:none;padding:4px;gap:4px}
+#topHeader #bar button{padding:7px 9px;font-size:11px}
+#topHeader .headerSpots{flex:0 0 auto;margin-left:0!important;gap:6px}
+#topHeader .spotChip{min-width:78px;padding:5px 7px}
+#topHeader .spotSwatch{width:22px;height:22px}
+#topHeader .headerRight{display:none!important}
+@media(max-width:1050px){
+ body.studio-ui{grid-template-rows:64px minmax(0,1fr)!important}
+ #topHeader{height:64px;min-height:64px!important;max-height:64px;padding:0 8px;gap:8px}
+ #topHeader .brandMark{flex-basis:155px;min-width:155px;gap:7px}
+ #topHeader .brandGlyph{width:30px;height:30px}
+ #topHeader .brandWords strong{font-size:11px;letter-spacing:1px}
+ #topHeader .brandWords small{font-size:7px;letter-spacing:.8px}
+ #topHeader .headerActionCluster{gap:5px}
+ #topHeader #previewBgControls .pbgLabel{display:none!important}
+ #topHeader #previewBgMode{width:112px;max-width:112px;font-size:10px}
+ #topHeader #bar button{padding:6px 7px;font-size:10px}
+ #topHeader .spotChip{min-width:58px;padding:4px 5px;gap:4px}
+ #topHeader .spotSwatch{width:17px;height:17px}
+ #topHeader .spotChip small{font-size:7px}
+}
+@media(max-width:650px){
+ body.studio-ui{grid-template-rows:58px minmax(0,1fr)!important}
+ #topHeader{height:58px;min-height:58px!important;max-height:58px;gap:5px;padding:0 6px}
+ #topHeader .brandMark{flex-basis:112px;min-width:112px;gap:5px}
+ #topHeader .brandGlyph{width:25px;height:25px;font-size:9px}
+ #topHeader .brandWords strong{font-size:9px;letter-spacing:.5px}
+ #topHeader .brandWords small{display:none}
+ #topHeader #previewBgMode{width:100px;max-width:100px}
+ #topHeader #previewBgColour{width:22px!important;height:24px;flex-basis:22px}
+ #topHeader #bar button{padding:5px 6px;font-size:9px}
+ #topHeader .spotChip{min-width:28px;padding:3px;gap:3px}
+ #topHeader .spotChip small{display:none}
+ #topHeader .spotSwatch{width:15px;height:15px}
+}
+</style>
+
 </head>
 <body class="studio-ui">
 <header id="topHeader">
   <div class="brandMark"><span class="brandGlyph">CM</span><div class="brandWords"><strong>CUTTER MAKER</strong><small>PRECISION PROFILE STUDIO</small></div></div>
   <div class="headerDivider"></div>
   <div class="headerContext"><span class="liveDot"></span><div><strong>Design workspace</strong><small>Vector profile · artwork · spot separations</small></div></div>
+  <div class="headerActionCluster" aria-label="Workspace actions">
+    <div id="previewBgControls" role="group" aria-label="Preview background settings">
+    <span class="pbgLabel">PREVIEW BACKGROUND</span>
+    <select id="previewBgMode" aria-label="Preview background">
+      <option value="checker">Checkered / transparency</option>
+      <option value="white">White</option>
+      <option value="light">Light grey</option>
+      <option value="dark">Dark charcoal</option>
+      <option value="custom">Custom colour</option>
+    </select>
+    <input id="previewBgColour" type="color" value="#d8dde5" aria-label="Custom preview background colour" title="Choose any preview background colour">
+    <span class="pbgHint">Preview only · does not alter PDF spot colours</span>
+    </div>
+    <div id="bar">
+    <button id="undo" title="Undo (Ctrl+Z)">↶</button>
+    <button id="fitBtn" title="Fit the whole design to the screen (F)">Fit</button>
+    <button id="dimBtn" title="Show/hide dimensions (D)">Dims</button>
+    <button id="importPdf" title="Import a cutter profile from a PDF (or drop a PDF on the canvas)">Import PDF</button><input type="file" id="pdfIn" accept=".pdf,application/pdf" hidden>
+    <div id="exp"><button id="expBtn">Export ▾</button>
+      <div id="expMenu" hidden>
+        <button id="downloadSvg">SVG — cutter file</button>
+        <button id="downloadPdf">PDF — cutter file</button>
+        <button id="downloadPdfArt">PDF — multilayer spot artwork + cutter</button>
+        <button id="downloadPdfAnnotated">PDF — colour dimension sheet</button>
+        <button id="downloadA4">PDF — A4 formal sheet (client, job no., logo…)</button>
+        <button id="downloadBlueprint">PDF — A4 blueprint sheet (blue &amp; white)</button>
+        <button id="downloadSafe">PDF — cutter 1:1 + SAFE ZONE guide (A4 layout)</button>
+        <button id="downloadLayersKey">PDF — All Design Layers + Colour Key</button>
+      </div></div>
+    </div>
+  </div>
   <div class="headerSpots" aria-label="Spot colour preview"><span class="spotChip"><i class="spotSwatch spot7"></i><span><b>7</b><small>MAGENTA</small></span></span><span class="spotChip"><i class="spotSwatch spot8"></i><span><b>8</b><small>CYAN</small></span></span></div>
   <div class="headerRight"><span class="headerMode">WINDOWS DESKTOP WORKSPACE</span><span class="versionPill">VECTOR · PDF</span></div>
 </header>
@@ -352,6 +463,7 @@ body.studio-ui{height:100dvh;width:100vw;display:grid;grid-template-columns:66px
 
 <div id="app">
   <canvas id="c"></canvas>
+
   <div id="status"></div>
   <div id="report" hidden></div>
   <div id="dimKey" hidden></div>
@@ -363,23 +475,7 @@ body.studio-ui{height:100dvh;width:100vw;display:grid;grid-template-columns:66px
       <button id="pfX">Cancel</button></div>
     <div id="pfHint"></div>
   </div>
-  <div id="bar">
-    <button id="undo" title="Undo (Ctrl+Z)">↶</button>
-    <button id="fitBtn" title="Fit the whole design to the screen (F)">Fit</button>
-    <button id="dimBtn" title="Show/hide dimensions (D)">Dims</button>
-    <button id="importPdf" title="Import a cutter profile from a PDF (or drop a PDF on the canvas)">Import PDF</button><input type="file" id="pdfIn" accept=".pdf,application/pdf" hidden>
-    <div id="exp"><button id="expBtn">Export ▾</button>
-      <div id="expMenu" hidden>
-        <button id="downloadSvg">SVG — cutter file</button>
-        <button id="downloadPdf">PDF — cutter file</button>
-        <button id="downloadPdfArt">PDF — multilayer spot artwork + cutter</button>
-        <button id="downloadPdfAnnotated">PDF — colour dimension sheet</button>
-        <button id="downloadA4">PDF — A4 formal sheet (client, job no., logo…)</button>
-        <button id="downloadBlueprint">PDF — A4 blueprint sheet (blue &amp; white)</button>
-        <button id="downloadSafe">PDF — cutter 1:1 + SAFE ZONE guide (A4 layout)</button>
-        <button id="downloadLayersKey">PDF — All Design Layers + Colour Key</button>
-      </div></div>
-  </div>
+
 </div>
 
 <div id="bcModal" hidden><div class="card">
@@ -5226,7 +5322,7 @@ function drawLogo(ctx, L, w, h) { const I = IMGS[L.img]; if (!I) return; if (I.v
 
 /* ══════════════ Barcode layer — FunQR generator (inlined) → vector artwork ══════════════ */
 const FQ = (() => {
-  const state = {qrMatrix:null, moduleCount:0, logoImage:null, options:{size:300, errorLevel:'M', bodyStyle:'standard', dotsStyle:'square', cornersSquareStyle:'square', cornersDotStyle:'square', transparentBg:true, colorBg:'#ffffff', fillMode:'solid', colorFg:'#000000', colorFgEnd:'#000000', gradientType:'linear', gradientAngle:45, colorCornerFrame:'#000000', colorCornerDot:'#000000', frameStyle:'none', frameText:'SCAN ME', frameTextTop:'SCAN ME', frameTextBottom:'VISIT US', frameColor:'#000000', frameTextColor:'#ffffff', frameTextSize:14, frameFont:"Arial, sans-serif", curvedText:true, logoSize:30, logoBg:true, imageMask:false}};
+  const state = {qrMatrix:null, moduleCount:0, logoImage:null, options:{size:300, errorLevel:'M', bodyStyle:'standard', dotsStyle:'square', cornersSquareStyle:'square', cornersDotStyle:'square', transparentBg:true, colorBg:'#ffffff', fillMode:'solid', colorFg:'#000000', colorFgEnd:'#000000', gradientType:'linear', gradientAngle:45, colorCornerFrame:'#000000', colorCornerDot:'#000000', frameStyle:'none', frameText:'', frameTextTop:'', frameTextBottom:'', frameColor:'#000000', frameTextColor:'#ffffff', frameTextSize:14, frameFont:"Arial, sans-serif", curvedText:true, logoSize:30, logoBg:true, imageMask:false}};
     function renderSVG({ withBackground = true, forceSize = null } = {}) {
       const { moduleCount } = state;
       let size, cellSize, quietZone, totalSize;
@@ -5751,7 +5847,7 @@ function svgToVec(svgStr) {
 const BC_OPTS = {"style-body": [["standard", "Standard (Squares)"], ["fluid-mosaic", "Water droplet"], ["merged-hollow-pills", "Merged Hollow Pills"], ["tri-fluid", "Alien script"], ["crosshatch", "Crossbars"], ["liquid-merge", "Liquid Merge"], ["crystals", "Small squares"], ["triangles", "Triangles"], ["octagons", "Triangle blobs"], ["ninja", "Diamonds"], ["dots", "Standard Dots"], ["mixed-dots", "Mixed Size Dots"], ["vertical-rounded", "Vertical Pills"], ["horizontal-rounded", "Horizontal Pills"], ["fluid", "Fluid (Connected)"], ["wave", "Wave"], ["mosaic", "Mosaic"], ["bricks", "Bricks"], ["scaling", "Scaling"]], "style-dots": [["square", "Square"], ["rounded", "Rounded"], ["dots", "Circular Dots"], ["classy", "Classy"], ["small-square", "Small Square"], ["diamond", "Diamond"], ["cross", "Cross"], ["star", "Star"], ["triangle", "Triangle"], ["heavy-donut", "Heavy Donut"], ["half-rect", "Half Rectangle"], ["tiny-dot", "Tiny Dot"], ["tiny-square", "Tiny Square"], ["rounded-triangle", "Rounded Triangle"]], "style-corners-square": [["square", "Square"], ["dot", "Circle"], ["dotted-rounded", "Dotted Rounded"], ["tiny-dotted-square", "Tiny Dot Square"], ["tiny-dotted-circle", "Tiny Dot Circle"], ["dashed-rounded", "Dashed Rounded"], ["leaf-top", "small-diamond"], ["star", "big diamond"]], "style-corners-dots": [["square", "Square"], ["dot", "Circle"], ["rounded", "Rounded Square"], ["diamond", "Diamond"], ["heart", "Heart"], ["shield", "Hexagon"], ["cross", "Cross"], ["star", "Star"]], "frame-style": [["none", "None"], ["circle", "Circle Frame"], ["rounded-rect", "Rounded Rectangle"], ["label-bottom", "Label Strip (Bottom)"], ["label-top", "Label Strip (Top)"], ["double-strip", "Double Strip"], ["boxed", "Boxed Border"]], "error-level": [["L", "Low (7%)"], ["M", "Medium (15%)"], ["Q", "Quartile (25%)"], ["H", "High (30%)"]]};
 const BC_DEF = () => ({sym:"qr", linearData:"", type:"url", url:"https://", text:"", ssid:"", pass:"", fname:"", lname:"", phone:"", email:"",
   o:{errorLevel:"M", bodyStyle:"standard", dotsStyle:"square", cornersSquareStyle:"square", cornersDotStyle:"square", transparentBg:true, colorBg:"#ffffff", colorFg:"#000000", colorCornerFrame:"#000000", colorCornerDot:"#000000",
-     frameStyle:"none", frameText:"SCAN ME", frameTextTop:"SCAN ME", frameTextBottom:"VISIT US", frameColor:"#000000", frameTextColor:"#ffffff", frameTextSize:14, curvedText:true}});
+     frameStyle:"none", frameText:"", frameTextTop:"", frameTextBottom:"", frameColor:"#000000", frameTextColor:"#ffffff", frameTextSize:14, curvedText:true}});
 let bcCfg = null, bcEdit = -1, bcSvg = "", bcTab = "content", bcTimer = 0;
 const bcData = c => { if (c.sym && c.sym !== "qr") return (c.linearData || "").trim(); const t = c.type; if (t === "url") { const u = c.url.trim(); return u === "https://" ? "" : u; } if (t === "text") return c.text.trim();
   if (t === "wifi") { const s = c.ssid.trim(); return s ? `WIFI:T:WPA;S:${s};P:${c.pass};;` : ""; }
@@ -6215,5 +6311,79 @@ profUI(); addUI(); readProfile();
  });
 })();
 </script>
+
+<script id="previewBackgroundControlsLogic">
+(function(){
+  const canvas=document.getElementById('c');
+  const mode=document.getElementById('previewBgMode');
+  const picker=document.getElementById('previewBgColour');
+  if(!canvas||!mode||!picker) return;
+  function applyPreviewBackground(){
+    const v=mode.value;
+    canvas.style.backgroundColor='#ffffff';
+    canvas.style.backgroundImage='none';
+    canvas.style.backgroundSize='auto';
+    if(v==='checker'){
+      canvas.style.backgroundColor='#f5f6f8';
+      canvas.style.backgroundImage='linear-gradient(45deg,#dfe4eb 25%,transparent 25%,transparent 75%,#dfe4eb 75%,#dfe4eb),linear-gradient(45deg,#dfe4eb 25%,transparent 25%,transparent 75%,#dfe4eb 75%,#dfe4eb)';
+      canvas.style.backgroundPosition='0 0,10px 10px';
+      canvas.style.backgroundSize='20px 20px';
+    }else if(v==='white'){
+      canvas.style.backgroundColor='#ffffff';
+    }else if(v==='light'){
+      canvas.style.backgroundColor='#e7eaf0';
+    }else if(v==='dark'){
+      canvas.style.backgroundColor='#222831';
+    }else{
+      canvas.style.backgroundColor=picker.value||'#ffffff';
+    }
+    picker.title=v==='custom'?'Choose the preview background colour':'Choose a colour, then select Custom colour';
+  }
+  mode.addEventListener('change',applyPreviewBackground);
+  picker.addEventListener('input',function(){ if(mode.value!=='custom') mode.value='custom'; applyPreviewBackground(); });
+  applyPreviewBackground();
+})();
+</script>
+
+<style id="v50-export-menu-visibility-fix">
+/* Keep export choices above the canvas, tool overlays and all workspace panels. */
+#exp{position:static!important;}
+#expMenu{position:fixed!important;z-index:2147483000!important;right:auto!important;top:auto;left:auto;max-height:min(72vh,680px)!important;overflow-y:auto!important;isolation:isolate;}
+#expMenu[hidden]{display:none!important;}
+#expMenu button{position:relative;z-index:1;pointer-events:auto!important;}
+</style>
+<script id="v50-export-menu-position-fix">
+(function(){
+  function placeExportMenu(){
+    const btn=document.getElementById('expBtn');
+    const menu=document.getElementById('expMenu');
+    if(!btn||!menu||menu.hidden)return;
+    const r=btn.getBoundingClientRect();
+    const pad=10;
+    menu.style.position='fixed';
+    menu.style.zIndex='2147483000';
+    menu.style.top='0px'; menu.style.left='0px'; menu.style.right='auto';
+    const mr=menu.getBoundingClientRect();
+    const width=Math.min(Math.max(mr.width,280),window.innerWidth-pad*2);
+    let left=r.right-width;
+    left=Math.max(pad,Math.min(left,window.innerWidth-width-pad));
+    let top=r.bottom+7;
+    const maxHeight=Math.min(window.innerHeight-pad*2,680);
+    menu.style.maxHeight=maxHeight+'px';
+    if(top+Math.min(mr.height,maxHeight)>window.innerHeight-pad){
+      top=Math.max(pad,r.top-Math.min(mr.height,maxHeight)-7);
+    }
+    menu.style.left=left+'px'; menu.style.top=top+'px'; menu.style.width=width+'px';
+  }
+  document.addEventListener('click',function(e){
+    if(e.target && (e.target.id==='expBtn'||e.target.closest&&e.target.closest('#expBtn'))){
+      requestAnimationFrame(placeExportMenu);
+    }
+  },true);
+  window.addEventListener('resize',placeExportMenu);
+  window.addEventListener('scroll',placeExportMenu,true);
+})();
+</script>
+
 </body>
 </html>
