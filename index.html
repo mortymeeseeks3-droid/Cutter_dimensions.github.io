@@ -55,6 +55,17 @@ input[type=color]{height:34px;padding:2px;cursor:pointer}
 .tools{position:absolute;right:14px;top:12px;display:flex;gap:6px;z-index:5}
 .pill{position:absolute;left:14px;bottom:12px;background:rgba(14,17,22,.88);border:1px solid var(--line);border-radius:16px;padding:5px 12px;font-size:11px;color:var(--mut);z-index:5}
 .pill b{color:#f0b429;font-weight:600}
+.strip{position:absolute;right:14px;bottom:12px;z-index:5;display:flex;gap:8px;align-items:center;background:rgba(14,17,22,.92);border:1px solid var(--line);border-radius:12px;padding:6px 8px;max-width:min(430px,58%)}
+.strip select{width:auto;padding:3px 6px;font-size:11px}
+.sw{display:flex;flex-wrap:wrap;gap:4px;max-height:68px;overflow-y:auto}
+.sw button{width:20px;height:20px;padding:0;border-radius:4px;border:1px solid rgba(255,255,255,.25)}
+.sw button:hover{transform:scale(1.25);box-shadow:none;border-color:#fff}
+.cw{display:flex;gap:6px}.cw input{flex:1}
+.pb{width:36px;padding:0;display:grid;place-items:center;flex:none}
+.pop{position:fixed;z-index:90;background:var(--panel);border:1px solid var(--blue);border-radius:8px;padding:10px;width:252px;box-shadow:0 12px 36px rgba(0,0,0,.6)}
+.pop .ph{font-size:11px;color:var(--mut);margin-bottom:8px;font-weight:600}
+.pop .sw{max-height:230px}.pop .sw button{width:24px;height:24px}
+.muted{color:var(--mut);font-size:11px;margin-top:8px}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;z-index:50}.modal.on{display:grid}
 .dlg{width:420px;max-width:94vw;max-height:92vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px}
 .dlg h3{margin:0 0 14px;font-size:15px}
@@ -69,7 +80,7 @@ input[type=color]{height:34px;padding:2px;cursor:pointer}
   <div class="sp"></div>
   <button id="bOpen">Open</button><button id="bSave">Save</button><button id="bReset">Reset</button>
   <button id="bSvg">SVG</button><button id="bPng">PNG</button><button class="pri" id="bPdf">Export PDF…</button>
-  <input type="file" id="fProj" accept=".json" hidden><input type="file" id="fFont" accept=".ttf,.otf,.woff" multiple hidden>
+  <input type="file" id="fProj" accept=".json" hidden><input type="file" id="fFont" accept=".ttf,.otf,.woff" multiple hidden><input type="file" id="fFolder" webkitdirectory multiple hidden><input type="file" id="fAse" accept=".ase" hidden>
 </header>
 <main>
 <aside>
@@ -125,15 +136,15 @@ ${sl(p+'Size','Size',4,72,.5,'pt')}${sl(p+'Sp','Letter spacing',-1,10,.05,'mm')}
 ${sl(p+'Dia','Ring diameter',20,98,.5,'mm')}${sl(p+'Rot','Rotation',-180,180,1,'°')}${sl(p+'Off','Raise / lower',-20,20,.1,'mm')}
 <div class="row"><label class="chk"><input type="checkbox" id="${p}Flip"> Flip direction</label></div>
 <div class="fit"><span>Fit to</span><input type="number" id="${p}Span" min="10" max="360"><span>° arc</span><button class="sm" id="${p}Fit">Auto-fit size</button></div></div></div>`;
-$('p1').innerHTML=`<button class="sm" id="bFont" style="width:100%;margin-bottom:12px">+ Load font file (.ttf / .otf / .woff)</button>`+ringCard('t','Top ring text')+ringCard('b','Bottom ring text',true);
-$('p2').innerHTML=`<div class="card"><div class="ct">Centre symbol</div>
+$('p1').innerHTML=`<div class="card"><div class="ct">Your fonts</div><div class="g2"><button class="sm" id="bFolder">Load font folder…</button><button class="sm" id="bFont">Load font file(s)…</button></div><div class="muted" id="fontInfo">TTF, OTF and WOFF are supported (not WOFF2). Fonts are used for the preview and embedded as outlines in exports.</div></div>`+ringCard('t','Top ring text')+ringCard('b','Bottom ring text',true);
+$('p2').innerHTML=`<div class="card"><div class="ct"><span>Colour palette</span><button class="sm" id="bAse">Load .ase…</button></div><div class="muted" id="palInfo" style="margin:0">No palette loaded. Once loaded, swatches appear at the bottom of the preview — pick a target there, then click a swatch.</div><div class="row"><button class="sm" id="palClear" style="display:none">Remove palette</button></div></div><div class="card"><div class="ct">Centre symbol</div>
 <div class="field"><select id="sym"><option value="star">Five-point star</option><option value="crest">Shield crest</option><option value="vinyl">Vinyl record</option><option value="anchor">Anchor</option><option value="monogram">Monogram</option><option value="custom">Custom image / SVG</option><option value="none">None</option></select></div>
 <div class="field" id="fMono"><label>Monogram (max 3)</label><input id="mono" maxlength="3"></div>
 <div class="field" id="fUp"><label>Image (PNG / JPG / SVG)</label><input type="file" id="up" accept="image/png,image/jpeg,image/svg+xml"></div>
-${sl('sScale','Symbol scale',.2,2.5,.05,'×')}</div>
-<div class="card"><div class="ct">Colours</div><div class="g2"><div class="field"><label>Accent / symbol</label><input type="color" id="cAcc"></div><div class="field"><label>Background</label><input type="color" id="cBg"></div></div><div class="row"><label class="chk"><input type="checkbox" id="transp"> Transparent background</label></div></div>
-<div class="card"><div class="ct"><span>Border ring 1</span><label class="chk"><input type="checkbox" id="r1On"> On</label></div>${sl('r1Dia','Diameter',20,100,.5,'mm')}${sl('r1W','Line width',.1,3,.05,'mm')}</div>
-<div class="card"><div class="ct"><span>Border ring 2</span><label class="chk"><input type="checkbox" id="r2On"> On</label></div>${sl('r2Dia','Diameter',20,100,.5,'mm')}${sl('r2W','Line width',.1,3,.05,'mm')}</div>
+${sl('sScale','Symbol scale',.2,10.0,.05,'×')}</div>
+<div class="card"><div class="ct">Colours</div><div class="g2"><div class="field"><label>Accent (sets symbol &amp; rings)</label><input type="color" id="cAcc"></div><div class="field"><label>Background</label><input type="color" id="cBg"></div></div><div class="g2"><div class="field"><label>Symbol</label><input type="color" id="sCol"></div><div class="field"><label>Border ring 1</label><input type="color" id="r1Col"></div></div><div class="g2"><div class="field"><label>Border ring 2</label><input type="color" id="r2Col"></div><div></div></div><div class="row"><label class="chk"><input type="checkbox" id="transp"> Transparent background</label></div></div>
+<div class="card"><div class="ct"><span>Border ring 1</span><label class="chk"><input type="checkbox" id="r1On"> On</label></div>${sl('r1Dia','Diameter',20,100,.5,'mm')}${sl('r1W','Line width',.1,50,.05,'mm')}</div>
+<div class="card"><div class="ct"><span>Border ring 2</span><label class="chk"><input type="checkbox" id="r2On"> On</label></div>${sl('r2Dia','Diameter',20,100,.5,'mm')}${sl('r2W','Line width',.1,50,.05,'mm')}</div>
 <div class="card"><div class="ct"><span>Cut line (spot colour)</span><label class="chk"><input type="checkbox" id="cutOn"> On</label></div>${sl('cutDia','Cut diameter',20,100,.5,'mm')}<div class="field"><label>Spot colour name</label><input id="cutName"></div></div>
 <div class="card"><label class="chk"><input type="checkbox" id="gOn"> Show ring guides (preview only)</label></div>`;
 const ic=(x)=>`<svg viewBox="0 0 24 24">${x}</svg>`;
@@ -146,22 +157,23 @@ $('p3').innerHTML=`<div class="presets">
 <div class="pc" data-p="seal">${ic('<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="7"/><path d="M12 8l1.2 2.6 2.8.3-2.1 1.9.6 2.8-2.5-1.4-2.5 1.4.6-2.8L8 10.9l2.8-.3z"/>')}Notary seal</div></div>`;
 
 /* ---------- state ---------- */
-const IDS=['tTxt','tFont','tWt','tSize','tSp','tCol','tAlign','tDia','tRot','tOff','tFlip','tSpan','bOn','bTxt','bFont','bWt','bSize','bSp','bCol','bAlign','bDia','bRot','bOff','bFlip','bSpan','sym','mono','sScale','cAcc','cBg','transp','r1On','r1Dia','r1W','r2On','r2Dia','r2W','cutOn','cutDia','cutName','gOn','pdfPage','pdfBleed','pdfMarks','pdfColor','pdfTitle','pdfBar','pdfInfo'];
+const IDS=['tTxt','tFont','tWt','tSize','tSp','tCol','tAlign','tDia','tRot','tOff','tFlip','tSpan','bOn','bTxt','bFont','bWt','bSize','bSp','bCol','bAlign','bDia','bRot','bOff','bFlip','bSpan','sym','mono','sScale','cAcc','sCol','r1Col','r2Col','cBg','transp','r1On','r1Dia','r1W','r2On','r2Dia','r2W','cutOn','cutDia','cutName','gOn','pdfPage','pdfBleed','pdfMarks','pdfColor','pdfTitle','pdfBar','pdfInfo'];
 const DEF={tTxt:'CIRCULAR TYPOGRAPHY STUDIO',tFont:'Montserrat',tWt:'700',tSize:14,tSp:1,tCol:'#111215',tAlign:'mid',tDia:80,tRot:0,tOff:0,tFlip:false,tSpan:200,
  bOn:true,bTxt:'ESTABLISHED 2026 • VECTOR ART',bFont:'Montserrat',bWt:'700',bSize:11,bSp:1,bCol:'#ff3ca6',bAlign:'mid',bDia:80,bRot:0,bOff:0,bFlip:false,bSpan:160,
- sym:'star',mono:'C',sScale:1,cAcc:'#ff3ca6',cBg:'#ffffff',transp:false,r1On:false,r1Dia:94,r1W:.5,r2On:false,r2Dia:66,r2W:.3,cutOn:false,cutDia:96,cutName:'CUT',gOn:true,
+ sym:'star',mono:'C',sScale:1,cAcc:'#ff3ca6',sCol:'#ff3ca6',r1Col:'#ff3ca6',r2Col:'#ff3ca6',cBg:'#ffffff',transp:false,r1On:false,r1Dia:94,r1W:.5,r2On:false,r2Dia:66,r2W:.3,cutOn:false,cutDia:96,cutName:'CUT',gOn:true,
  pdfPage:'art',pdfBleed:3,pdfMarks:true,pdfColor:'RGB',pdfTitle:'CIRCLE TYPE ARTWORK',pdfBar:'#1f6feb',pdfInfo:true};
+const norm=o=>{const x={...DEF,...o};['sCol','r1Col','r2Col'].forEach(k=>{if(!(k in o))x[k]=x.cAcc});return x};
 const PRE={
  badge:{tTxt:'VINTAGE BADGE STUDIO • EST. 2026',bTxt:'• PREMIUM QUALITY •',tFont:'Cinzel',bFont:'Cinzel',tCol:'#1a1a1a',bCol:'#db2777',cAcc:'#db2777',tDia:78,bDia:78,tSize:13,bSize:11,r1On:true,r1Dia:94,r1W:.6,r2On:true,r2Dia:62,r2W:.3,gOn:false},
  stamp:{tTxt:'OFFICIAL SEAL OF EXCELLENCE',bTxt:'CONFIDENTIAL • APPROVED',tFont:'Space Grotesk',bFont:'Space Grotesk',sym:'crest',tCol:'#0f172a',bCol:'#2563eb',cAcc:'#2563eb',tSize:13,r1On:true,r1Dia:94,r1W:.8,gOn:false},
  record:{tTxt:'HIGH FIDELITY STEREO SOUND',bTxt:'33 1/3 RPM • SIDE A',tFont:'Montserrat',sym:'vinyl',tCol:'#111111',bCol:'#e11d48',cAcc:'#e11d48',gOn:false},
  minimal:{tTxt:'CIRCULAR VECTOR TYPOGRAPHY',bOn:false,tFont:'Inter',tWt:'400',sym:'none',tCol:'#000000',tSp:1.5,gOn:false},
- coaster:{tTxt:'THE CORNER CAFE',bTxt:'FRESH ROAST • DAILY',tFont:'Roboto Condensed',bFont:'Roboto Condensed',tSize:18,bSize:12,sym:'monogram',mono:'C',tCol:'#2b2118',bCol:'#8a5a2b',cAcc:'#8a5a2b',tDia:70,bDia:70,r1On:true,r1Dia:88,r1W:.8,cutOn:true,cutDia:96,gOn:false},
+ coaster:{tTxt:'THE CORNER CAFE',bTxt:'FRESH ROAST • DAILY',tFont:'Roboto Condensed',bFont:'Roboto Condensed',tSize:18,bSize:12,sym:'monogram',mono:'C',sCol:'#2b2118',tCol:'#2b2118',bCol:'#8a5a2b',cAcc:'#8a5a2b',tDia:70,bDia:70,r1On:true,r1Dia:88,r1W:.8,cutOn:true,cutDia:96,gOn:false},
  seal:{tTxt:'NOTARY PUBLIC • STATE OF EXAMPLE',bTxt:'COMMISSION NO. 000000',tFont:'Playfair Display',bFont:'Playfair Display',sym:'star',tCol:'#14213d',bCol:'#14213d',cAcc:'#14213d',tSize:12,bSize:9,tDia:78,bDia:78,r1On:true,r1Dia:94,r1W:.7,r2On:true,r2Dia:60,r2W:.35,gOn:false}};
 function readState(){const v={};IDS.forEach(id=>{const e=$(id);v[id]=e.type==='checkbox'?e.checked:(e.type==='range'||e.type==='number')?+e.value:e.value});return v}
 function applyState(s){IDS.forEach(id=>{if(!(id in s))return;const e=$(id);if(e.type==='checkbox')e.checked=!!s[id];else e.value=s[id]});syncNums()}
 function syncNums(){document.querySelectorAll('input[type=range]').forEach(r=>{const n=$(r.id+'_n');if(n)n.value=+(+r.value).toFixed(2)})}
-function refreshFonts(){const names=[...Object.keys(FONT_DATA),...Object.keys(custom)];document.querySelectorAll('.fs').forEach(s=>{const cur=s.value;s.innerHTML='';names.forEach(n=>{const o=document.createElement('option');o.textContent=o.value=n;s.appendChild(o)});s.value=names.includes(cur)?cur:'Montserrat'})}
+function refreshFonts(){const bi=Object.keys(FONT_DATA),cu=Object.keys(custom).sort((x,y)=>x.localeCompare(y));document.querySelectorAll('.fs').forEach(s=>{const cur=s.value;s.innerHTML='';[['Built-in',bi],['Your fonts ('+cu.length+')',cu]].forEach(([l,ns])=>{if(!ns.length)return;const g=document.createElement('optgroup');g.label=l;ns.forEach(n=>{const o=document.createElement('option');o.textContent=o.value=n;g.appendChild(o)});s.appendChild(g)});s.value=[...bi,...cu].includes(cur)?cur:'Montserrat'})}
 
 /* ---------- geometry ---------- */
 const rect=(x,y,w,h)=>[['M',x,y],['L',x+w,y],['L',x+w,y+h],['L',x,y+h],['Z']];
@@ -193,19 +205,19 @@ function monoCmds(v,s){
 }
 const parseD=d=>d.match(/[MLCZ][^MLCZ]*/g).map(s=>[s[0],...s.slice(1).split(/[ ,]+/).filter(Boolean).map(Number)]);
 function symbol(v,S){
-  const s=+v.sScale,T=cm=>cm.map(c=>[c[0],...c.slice(1).map(n=>500+n*s)]),a=v.cAcc;
+  const s=+v.sScale,T=cm=>cm.map(c=>[c[0],...c.slice(1).map(n=>500+n*s)]),a=v.sCol;
   if(v.sym==='star')S.push({cmds:T(parseD('M 0,-60 L 18,-18 L 60,-18 L 24,10 L 38,54 L 0,26 L -38,54 L -24,10 L -60,-18 L -18,-18 Z')),fill:a});
   else if(v.sym==='crest')S.push({cmds:T(parseD('M 0,-70 C 40,-70 60,-50 60,-20 C 60,40 0,75 0,75 C 0,75 -60,40 -60,-20 C -60,-50 -40,-70 0,-70 Z')),stroke:a,sw:6*s});
   else if(v.sym==='anchor')S.push({cmds:T(parseD('M 0,-60 L 0,50 M -40,10 C -40,55 40,55 40,10 M -20,-30 L 20,-30')),stroke:a,sw:8*s});
   else if(v.sym==='vinyl'){S.push({cmds:circ(500,500,70*s),fill:'#111111'},{cmds:circ(500,500,25*s),fill:a},{cmds:circ(500,500,6*s),fill:'#ffffff'})}
-  else if(v.sym==='monogram')S.push({cmds:monoCmds(v,s),fill:v.tCol});
+  else if(v.sym==='monogram')S.push({cmds:monoCmds(v,s),fill:v.sCol});
   else if(v.sym==='custom'&&uploaded)S.push({img:uploaded,x:500-75*s,y:500-75*s,w:150*s,h:150*s});
 }
 function scene(b=0){
   const v=readState(),S=[],info={};
   if(!v.transp)S.push({cmds:rect(-b,-b,1000+2*b,1000+2*b),fill:v.cBg});
-  if(v.r1On)S.push({cmds:circ(500,500,v.r1Dia*5),stroke:v.cAcc,sw:v.r1W*U});
-  if(v.r2On)S.push({cmds:circ(500,500,v.r2Dia*5),stroke:v.cAcc,sw:v.r2W*U});
+  if(v.r1On)S.push({cmds:circ(500,500,v.r1Dia*5),stroke:v.r1Col,sw:v.r1W*U});
+  if(v.r2On)S.push({cmds:circ(500,500,v.r2Dia*5),stroke:v.r2Col,sw:v.r2W*U});
   symbol(v,S);
   for(const p of['t','b']){
     if(p==='b'&&!v.bOn)continue;
@@ -227,6 +239,7 @@ function upd(){
   $('paper').classList.toggle('ck',v.transp);
   $('fMono').style.display=v.sym==='monogram'?'':'none';$('fUp').style.display=v.sym==='custom'?'':'none';
   $('bBody').style.opacity=v.bOn?1:.4;$('bBody').style.pointerEvents=v.bOn?'':'none';
+  ['t','b'].forEach(p=>{$(p+'Wt').disabled=!!custom[v[p+'Font']]});
   const miss=(info.t?info.t.miss:0)+(info.b?info.b.miss:0);
   $('pill').innerHTML='100 × 100 mm'+(info.t?` · top ${Math.round(info.t.span)}°`:'')+(info.b?` · bottom ${Math.round(info.b.span)}°`:'')+(miss?` · <b>${miss} character${miss>1?'s':''} missing from font</b>`:'');
   try{localStorage.setItem('cts_state',JSON.stringify({...v,_img:uploaded}))}catch(e){}
@@ -236,11 +249,12 @@ document.addEventListener('input',e=>{
   const t=e.target;if(!t.id)return;
   if(t.type==='range'){const n=$(t.id+'_n');if(n)n.value=+(+t.value).toFixed(2)}
   else if(t.id.endsWith('_n')){const r=$(t.id.slice(0,-2));if(r){r.value=t.value;}}
+  if(t.id==='cAcc')['sCol','r1Col','r2Col'].forEach(k=>$(k).value=t.value);
   sched();
 });
 document.addEventListener('change',sched);
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button,.pane').forEach(x=>x.classList.remove('on'));b.classList.add('on');$(b.dataset.t).classList.add('on')});
-document.querySelectorAll('.pc').forEach(c=>c.onclick=()=>{applyState({...DEF,...PRE[c.dataset.p]});upd()});
+document.querySelectorAll('.pc').forEach(c=>c.onclick=()=>{applyState(norm(PRE[c.dataset.p]));upd()});
 $('bReset').onclick=()=>{uploaded=null;applyState(DEF);upd()};
 ['t','b'].forEach(p=>$(p+'Fit').onclick=()=>{
   const v=readState(),r=ring(v,p,10);if(!r.n)return;
@@ -249,11 +263,75 @@ $('bReset').onclick=()=>{uploaded=null;applyState(DEF);upd()};
   $(p+'Size').value=Math.min(72,Math.round(size*10)/10);syncNums();upd();
 });
 $('up').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{uploaded=r.result;upd()};r.readAsDataURL(f)};
-$('bFont').onclick=()=>$('fFont').click();
-$('fFont').onchange=async e=>{
-  for(const f of e.target.files){try{const ft=opentype.parse(await f.arrayBuffer());custom[(ft.names.fullName&&ft.names.fullName.en)||f.name.replace(/\.\w+$/,'')]=ft;toast('Loaded '+f.name)}catch(err){toast('Could not read '+f.name+' (WOFF2 is not supported)')}}
-  const keep=readState();refreshFonts();applyState(keep);e.target.value='';upd();
+$('bFont').onclick=()=>$('fFont').click();$('bFolder').onclick=()=>$('fFolder').click();
+const fname=(ft,f)=>{const n=ft.names||{},g=k=>n[k]&&(n[k].en||Object.values(n[k])[0]);return g('fullName')||((g('fontFamily')||'')+' '+(g('fontSubfamily')||'')).trim()||f.name.replace(/\.\w+$/,'')};
+async function addFonts(list){
+  const all=[...list],files=all.filter(f=>/\.(ttf|otf|woff)$/i.test(f.name)),w2=all.filter(f=>/\.woff2$/i.test(f.name)).length;let ok=0;
+  for(let i=0;i<files.length;i++){
+    try{const ft=opentype.parse(await files[i].arrayBuffer());let nm=fname(ft,files[i]);if(custom[nm]&&custom[nm]!==ft&&custom[nm]._src!==files[i].name)nm+=' ('+files[i].name+')';ft._src=files[i].name;custom[nm]=ft;ok++}catch(e){}
+    if(i%8===7){toast(`Loading fonts… ${i+1} / ${files.length}`);await new Promise(r=>setTimeout(r))}
+  }
+  const keep=readState();refreshFonts();applyState(keep);upd();
+  const msg=ok?`Loaded ${ok} font${ok>1?'s':''}`+(files.length-ok?`, ${files.length-ok} unreadable`:'')+(w2?`, ${w2} WOFF2 skipped`:''):(w2?'WOFF2 files are not supported — use TTF / OTF / WOFF':'No usable font files found');
+  $('fontInfo').textContent=msg+'. Loaded fonts last until you close or reload the page.';toast(msg);
+}
+$('fFont').onchange=async e=>{await addFonts(e.target.files);e.target.value=''};
+$('fFolder').onchange=async e=>{await addFonts(e.target.files);e.target.value=''};
+
+/* ---------- ASE palette ---------- */
+const hx=(r,g,b)=>'#'+[r,g,b].map(x=>Math.round(Math.max(0,Math.min(1,x))*255).toString(16).padStart(2,'0')).join('');
+function aseHex(m,v){
+  if(m==='RGB')return hx(...v);
+  if(m==='Gray')return hx(v[0],v[0],v[0]);
+  if(m==='CMYK'){const k=1-v[3];return hx((1-v[0])*k,(1-v[1])*k,(1-v[2])*k)}
+  const L=v[0]*100,fy=(L+16)/116,fx=fy+v[1]/500,fz=fy-v[2]/200,fi=q=>q>.2069?q**3:(q-16/116)/7.787;
+  const X=fi(fx)*.9642,Y=fi(fy),Z=fi(fz)*.8249,gm=u=>u<=.0031308?12.92*u:1.055*Math.max(0,u)**(1/2.4)-.055;
+  return hx(gm(3.1338561*X-1.6168667*Y-.4906146*Z),gm(-.9787684*X+1.9161415*Y+.033454*Z),gm(.0719453*X-.2289914*Y+1.4052427*Z));
+}
+function parseASE(buf){
+  const dv=new DataView(buf);if(dv.byteLength<12||dv.getUint32(0)!==0x41534546)throw new Error('Not an ASE file');
+  let p=12,n=dv.getUint32(8),grp='';const out=[];
+  const rd=()=>{const l=dv.getUint16(p);p+=2;let s='';for(let i=0;i<l;i++){const c=dv.getUint16(p);p+=2;if(c)s+=String.fromCharCode(c)}return s};
+  while(n-->0&&p+6<=dv.byteLength){
+    const ty=dv.getUint16(p),len=dv.getUint32(p+2);p+=6;const end=p+len;
+    if(ty===0xC001)grp=rd();else if(ty===0xC002)grp='';
+    else if(ty===1){const name=rd(),m=String.fromCharCode(dv.getUint8(p),dv.getUint8(p+1),dv.getUint8(p+2),dv.getUint8(p+3)).trim();p+=4;const c={RGB:3,CMYK:4,LAB:3,Gray:1}[m];if(c){const v=[];for(let i=0;i<c;i++){v.push(dv.getFloat32(p));p+=4}out.push({n:name,g:grp,h:aseHex(m,v)})}}
+    p=end;
+  }
+  return out;
+}
+let pal=null;
+function showPal(){
+  const has=pal&&pal.c.length;$('palClear').style.display=has?'':'none';
+  $('palInfo').textContent=has?`${pal.name} — ${pal.c.length} colours. Click the grid button beside any colour field to choose from this palette.`:'No palette loaded. Load an .ase file, then use the grid button beside any colour field to pick from it.';
+}
+const pop=document.createElement('div');pop.className='pop';pop.style.display='none';document.body.appendChild(pop);
+const closePop=()=>{pop.style.display='none'};
+function openPop(btn,inp){
+  pop.innerHTML='<div class="ph"></div><div class="sw"></div>';pop.firstChild.textContent=pal.name+' — '+pal.c.length+' colours';
+  const sw=pop.querySelector('.sw');
+  pal.c.forEach(c=>{const s=document.createElement('button');s.type='button';s.style.background=c.h;s.title=(c.g?c.g+' / ':'')+c.n+'  '+c.h.toUpperCase();s.onclick=()=>{inp.value=c.h;inp.dispatchEvent(new Event('input',{bubbles:true}));closePop()};sw.appendChild(s)});
+  pop.style.display='block';const r=btn.getBoundingClientRect(),pw=pop.offsetWidth,ph=pop.offsetHeight;
+  pop.style.left=Math.max(8,Math.min(innerWidth-pw-8,r.right-pw))+'px';
+  pop.style.top=(r.bottom+ph+10>innerHeight?Math.max(8,r.top-ph-6):r.bottom+6)+'px';
+}
+document.querySelectorAll('input[type=color]').forEach(inp=>{
+  const w=document.createElement('div');w.className='cw';inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
+  const b=document.createElement('button');b.type='button';b.className='pb';b.title='Pick from loaded palette';
+  b.innerHTML='<svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M1 1h4v4H1zM6 1h4v4H6zM11 1h4v4h-4zM1 6h4v4H1zM6 6h4v4H6zM11 6h4v4h-4zM1 11h4v4H1zM6 11h4v4H6z"/></svg>';
+  b.onclick=e=>{e.stopPropagation();if(!pal||!pal.c.length){$('fAse').click();return}openPop(b,inp)};
+  w.appendChild(b);
+});
+document.addEventListener('click',e=>{if(!pop.contains(e.target))closePop()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePop()});
+$('bAse').onclick=()=>$('fAse').click();
+$('fAse').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const c=parseASE(await f.arrayBuffer());if(!c.length)throw new Error('No colours found in file');pal={name:f.name.replace(/\.ase$/i,''),c};try{localStorage.setItem('cts_pal',JSON.stringify(pal))}catch(_){}showPal();toast('Loaded '+c.length+' colours from '+f.name)}catch(err){toast('Could not read palette: '+err.message)}
 };
+$('palClear').onclick=()=>{pal=null;try{localStorage.removeItem('cts_pal')}catch(_){}showPal()};
+try{pal=JSON.parse(localStorage.getItem('cts_pal')||'null')}catch(_){}
+showPal();
 let z=1;const setZ=n=>{z=Math.max(.4,Math.min(4,n));$('paper').style.setProperty('--z',z)};
 $('zi').onclick=()=>setZ(z*1.25);$('zo').onclick=()=>setZ(z/1.25);$('zf').onclick=()=>setZ(1);
 
@@ -261,7 +339,7 @@ $('zi').onclick=()=>setZ(z*1.25);$('zo').onclick=()=>setZ(z/1.25);$('zf').onclic
 const dl=(blob,name)=>{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)};
 $('bSave').onclick=()=>dl(new Blob([JSON.stringify({...readState(),_img:uploaded},null,1)],{type:'application/json'}),'circle-type-project.json');
 $('bOpen').onclick=()=>$('fProj').click();
-$('fProj').onchange=async e=>{try{const s=JSON.parse(await e.target.files[0].text());uploaded=s._img||null;applyState({...DEF,...s});upd()}catch(err){toast('Not a valid project file')}e.target.value=''};
+$('fProj').onchange=async e=>{try{const s=JSON.parse(await e.target.files[0].text());uploaded=s._img||null;applyState(norm(s));upd()}catch(err){toast('Not a valid project file')}e.target.value=''};
 $('bSvg').onclick=()=>{const{S}=scene();dl(new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="100mm" viewBox="0 0 1000 1000">${svgInner(S,false)}</svg>`],{type:'image/svg+xml'}),'circle-type.svg')};
 $('bPng').onclick=async()=>{
   try{const{S}=scene(),img=new Image();img.src=URL.createObjectURL(new Blob([`<svg xmlns="http://www.w3.org/2000/svg" width="3000" height="3000" viewBox="0 0 1000 1000">${svgInner(S,false)}</svg>`],{type:'image/svg+xml'}));await img.decode();
@@ -315,7 +393,9 @@ async function buildPDF(){
       const sw=(label,hex,sp)=>{P('q');if(sp){useSpot=true;P('/CS0 cs 1 scn')}else P(fc(hex));P(`${n4(ox)} ${n4(y-1*MM)} ${n4(3.5*MM)} ${n4(3.5*MM)} re f Q`);txt('/F2',9,ox+6*MM,y,label,dark);y-=5.5*MM};
       if(info.t)sw('Top text '+o.tCol.toUpperCase(),o.tCol);
       if(info.b)sw('Bottom text '+o.bCol.toUpperCase(),o.bCol);
-      sw('Accent '+o.cAcc.toUpperCase(),o.cAcc);
+      if(o.sym!=='none')sw('Symbol '+o.sCol.toUpperCase(),o.sCol);
+      if(o.r1On)sw('Border ring 1 '+o.r1Col.toUpperCase(),o.r1Col);
+      if(o.r2On)sw('Border ring 2 '+o.r2Col.toUpperCase(),o.r2Col);
       if(!o.transp)sw('Background '+o.cBg.toUpperCase(),o.cBg);
       if(o.cutOn)sw('Spot "'+o.cutName+'" - cut line (named spot colour)',null,true);
     }
@@ -370,7 +450,7 @@ $('mGo').onclick=async()=>{
 
 /* ---------- boot ---------- */
 refreshFonts();applyState(DEF);
-try{const s=JSON.parse(localStorage.getItem('cts_state')||'null');if(s){uploaded=s._img||null;const keep={...DEF,...s};if(!FONT_DATA[keep.tFont])keep.tFont='Montserrat';if(!FONT_DATA[keep.bFont])keep.bFont='Montserrat';applyState(keep)}}catch(e){}
+try{const s=JSON.parse(localStorage.getItem('cts_state')||'null');if(s){uploaded=s._img||null;const keep=norm(s);if(!FONT_DATA[keep.tFont])keep.tFont='Montserrat';if(!FONT_DATA[keep.bFont])keep.bFont='Montserrat';applyState(keep)}}catch(e){}
 upd();
 })();
 </script>
