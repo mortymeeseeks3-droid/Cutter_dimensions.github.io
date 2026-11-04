@@ -104,6 +104,7 @@ input[type=color]{height:34px;padding:2px;cursor:pointer}
   <div id="optArt"><div class="g2"><div class="field"><label>Bleed <span class="num"><i>mm</i></span></label><input type="number" id="pdfBleed" min="0" max="10" step="0.5"></div><div class="field"><label>&nbsp;</label><label class="chk"><input type="checkbox" id="pdfMarks"> Crop marks</label></div></div></div>
   <div id="optSheet"><div class="field"><label>Title</label><input id="pdfTitle"></div><div class="g2"><div class="field"><label>Header bar colour</label><input type="color" id="pdfBar"></div><div class="field"><label>&nbsp;</label><label class="chk"><input type="checkbox" id="pdfInfo"> Fonts &amp; colour key</label></div></div></div>
   <div class="field" style="margin-top:10px"><label>Colour mode</label><select id="pdfColor"><option value="RGB">RGB</option><option value="CMYK">CMYK (simple conversion)</option></select></div>
+  <div class="field" style="margin-top:10px"><label>Named spot colours</label><select id="pdfSpots"><option value="all">Palette colours used → named spots</option><option value="spot">Only swatches marked Spot in the .ase</option><option value="off">Off (process colours only)</option></select></div><div class="muted" id="spotInfo" style="margin-top:6px"></div>
   <p style="color:var(--mut);font-size:11px;margin:10px 0 0">All text is converted to vector outlines, so the PDF needs no fonts. The cut line (if enabled) is written as a named spot colour.</p>
   <div class="btns"><button id="mCancel">Cancel</button><button class="pri" id="mGo">Download PDF</button></div>
 </div></div>
@@ -128,23 +129,23 @@ const toast=m=>{const t=$('toast');t.textContent=m;t.style.display='block';clear
 
 /* ---------- UI ---------- */
 const sl=(id,l,min,max,step,u)=>`<div class="field"><label>${l}<span class="num"><input type="number" id="${id}_n" min="${min}" max="${max}" step="${step}"><i>${u}</i></span></label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}"></div>`;
-const ringCard=(p,t,tog)=>`<div class="card"><div class="ct"><span>${t}</span>${tog?`<label class="chk"><input type="checkbox" id="${p}On"> Enabled</label>`:''}</div><div id="${p}Body">
+const ringCard=(p,t,tog,rm)=>`<div class="card"><div class="ct"><span>${t}</span><span style="display:flex;gap:8px;align-items:center">${tog?`<label class="chk"><input type="checkbox" id="${p}On"> Enabled</label>`:''}${rm?`<button class="sm" data-rm="${p}">Remove</button>`:''}</span></div><div id="${p}Body">
 <textarea id="${p}Txt" spellcheck="false"></textarea>
 <div class="g2"><div class="field"><label>Font</label><select id="${p}Font" class="fs"></select></div><div class="field"><label>Weight</label><select id="${p}Wt"><option value="400">Regular</option><option value="700">Bold</option><option value="900">Black</option></select></div></div>
 ${sl(p+'Size','Size',4,72,.5,'pt')}${sl(p+'Sp','Letter spacing',-1,10,.05,'mm')}
-<div class="g2"><div class="field"><label>Colour</label><input type="color" id="${p}Col"></div><div class="field"><label>Align at ${p==='t'?'12':'6'} o'clock</label><select id="${p}Align"><option value="mid">Centre</option><option value="start">Start</option><option value="end">End</option></select></div></div>
+<div class="g2"><div class="field"><label>Colour</label><input type="color" id="${p}Col"></div><div class="field"><label>Position</label><select id="${p}Pos"><option value="top">Top (12 o'clock)</option><option value="bottom">Bottom (6 o'clock)</option></select></div></div>
+<div class="g2"><div class="field"><label>Alignment</label><select id="${p}Align"><option value="mid">Centre</option><option value="start">Start</option><option value="end">End</option></select></div><div class="field"><label>&nbsp;</label><label class="chk"><input type="checkbox" id="${p}Flip"> Flip direction</label></div></div>
 ${sl(p+'Dia','Ring diameter',20,98,.5,'mm')}${sl(p+'Rot','Rotation',-180,180,1,'°')}${sl(p+'Off','Raise / lower',-20,20,.1,'mm')}
-<div class="row"><label class="chk"><input type="checkbox" id="${p}Flip"> Flip direction</label></div>
 <div class="fit"><span>Fit to</span><input type="number" id="${p}Span" min="10" max="360"><span>° arc</span><button class="sm" id="${p}Fit">Auto-fit size</button></div></div></div>`;
-$('p1').innerHTML=`<div class="card"><div class="ct">Your fonts</div><div class="g2"><button class="sm" id="bFolder">Load font folder…</button><button class="sm" id="bFont">Load font file(s)…</button></div><div class="muted" id="fontInfo">TTF, OTF and WOFF are supported (not WOFF2). Fonts are used for the preview and embedded as outlines in exports.</div></div>`+ringCard('t','Top ring text')+ringCard('b','Bottom ring text',true);
+const borderCard=(n,rm)=>`<div class="card"><div class="ct"><span>Border ring ${n}</span><span style="display:flex;gap:8px;align-items:center"><label class="chk"><input type="checkbox" id="r${n}On"> On</label>${rm?`<button class="sm" data-rm="r${n}">Remove</button>`:''}</span></div>${sl('r'+n+'Dia','Diameter',20,100,.5,'mm')}${sl('r'+n+'W','Line width',.1,3,.05,'mm')}<div class="field"><label>Colour</label><input type="color" id="r${n}Col"></div></div>`;
+$('p1').innerHTML=`<div class="card"><div class="ct">Your fonts</div><div class="g2"><button class="sm" id="bFolder">Load font folder…</button><button class="sm" id="bFont">Load font file(s)…</button></div><div class="muted" id="fontInfo">TTF, OTF and WOFF are supported (not WOFF2). Fonts are used for the preview and embedded as outlines in exports.</div></div>`+ringCard('t','Top ring text')+ringCard('b','Bottom ring text',true)+'<div id="txtRings"></div><button class="sm" id="addTx" style="width:100%;margin-bottom:12px">+ Add text ring</button>';
 $('p2').innerHTML=`<div class="card"><div class="ct"><span>Colour palette</span><button class="sm" id="bAse">Load .ase…</button></div><div class="muted" id="palInfo" style="margin:0">No palette loaded. Once loaded, swatches appear at the bottom of the preview — pick a target there, then click a swatch.</div><div class="row"><button class="sm" id="palClear" style="display:none">Remove palette</button></div></div><div class="card"><div class="ct">Centre symbol</div>
 <div class="field"><select id="sym"><option value="star">Five-point star</option><option value="crest">Shield crest</option><option value="vinyl">Vinyl record</option><option value="anchor">Anchor</option><option value="monogram">Monogram</option><option value="custom">Custom image / SVG</option><option value="none">None</option></select></div>
 <div class="field" id="fMono"><label>Monogram (max 3)</label><input id="mono" maxlength="3"></div>
 <div class="field" id="fUp"><label>Image (PNG / JPG / SVG)</label><input type="file" id="up" accept="image/png,image/jpeg,image/svg+xml"></div>
-${sl('sScale','Symbol scale',.2,10.0,.05,'×')}</div>
-<div class="card"><div class="ct">Colours</div><div class="g2"><div class="field"><label>Accent (sets symbol &amp; rings)</label><input type="color" id="cAcc"></div><div class="field"><label>Background</label><input type="color" id="cBg"></div></div><div class="g2"><div class="field"><label>Symbol</label><input type="color" id="sCol"></div><div class="field"><label>Border ring 1</label><input type="color" id="r1Col"></div></div><div class="g2"><div class="field"><label>Border ring 2</label><input type="color" id="r2Col"></div><div></div></div><div class="row"><label class="chk"><input type="checkbox" id="transp"> Transparent background</label></div></div>
-<div class="card"><div class="ct"><span>Border ring 1</span><label class="chk"><input type="checkbox" id="r1On"> On</label></div>${sl('r1Dia','Diameter',20,100,.5,'mm')}${sl('r1W','Line width',.1,50,.05,'mm')}</div>
-<div class="card"><div class="ct"><span>Border ring 2</span><label class="chk"><input type="checkbox" id="r2On"> On</label></div>${sl('r2Dia','Diameter',20,100,.5,'mm')}${sl('r2W','Line width',.1,50,.05,'mm')}</div>
+${sl('sScale','Symbol scale',.2,2.5,.05,'×')}</div>
+<div class="card"><div class="ct">Colours</div><div class="g2"><div class="field"><label>Accent (sets symbol &amp; rings)</label><input type="color" id="cAcc"></div><div class="field"><label>Background</label><input type="color" id="cBg"></div></div><div class="field"><label>Symbol</label><input type="color" id="sCol"></div><div class="row"><label class="chk"><input type="checkbox" id="transp"> Transparent background</label></div></div>
+<div id="borderRings"></div><button class="sm" id="addBr" style="width:100%;margin-bottom:12px">+ Add border ring</button>
 <div class="card"><div class="ct"><span>Cut line (spot colour)</span><label class="chk"><input type="checkbox" id="cutOn"> On</label></div>${sl('cutDia','Cut diameter',20,100,.5,'mm')}<div class="field"><label>Spot colour name</label><input id="cutName"></div></div>
 <div class="card"><label class="chk"><input type="checkbox" id="gOn"> Show ring guides (preview only)</label></div>`;
 const ic=(x)=>`<svg viewBox="0 0 24 24">${x}</svg>`;
@@ -157,11 +158,14 @@ $('p3').innerHTML=`<div class="presets">
 <div class="pc" data-p="seal">${ic('<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="7"/><path d="M12 8l1.2 2.6 2.8.3-2.1 1.9.6 2.8-2.5-1.4-2.5 1.4.6-2.8L8 10.9l2.8-.3z"/>')}Notary seal</div></div>`;
 
 /* ---------- state ---------- */
-const IDS=['tTxt','tFont','tWt','tSize','tSp','tCol','tAlign','tDia','tRot','tOff','tFlip','tSpan','bOn','bTxt','bFont','bWt','bSize','bSp','bCol','bAlign','bDia','bRot','bOff','bFlip','bSpan','sym','mono','sScale','cAcc','sCol','r1Col','r2Col','cBg','transp','r1On','r1Dia','r1W','r2On','r2Dia','r2W','cutOn','cutDia','cutName','gOn','pdfPage','pdfBleed','pdfMarks','pdfColor','pdfTitle','pdfBar','pdfInfo'];
-const DEF={tTxt:'CIRCULAR TYPOGRAPHY STUDIO',tFont:'Montserrat',tWt:'700',tSize:14,tSp:1,tCol:'#111215',tAlign:'mid',tDia:80,tRot:0,tOff:0,tFlip:false,tSpan:200,
+const IDS_BASE=['sym','mono','sScale','cAcc','sCol','cBg','transp','cutOn','cutDia','cutName','gOn','pdfPage','pdfBleed','pdfMarks','pdfColor','pdfSpots','pdfTitle','pdfBar','pdfInfo'];
+let IDS=[];const txx=[],brx=[];
+const allT=()=>['t','b',...txx],allB=()=>[1,2,...brx];
+const RS=['Txt','Font','Wt','Size','Sp','Col','Align','Dia','Rot','Off','Flip','Span','Pos','On'],BS=['On','Dia','W','Col'];
+const DEF={tPos:'top',bPos:'bottom',_tx:[],_br:[],tTxt:'CIRCULAR TYPOGRAPHY STUDIO',tFont:'Montserrat',tWt:'700',tSize:14,tSp:1,tCol:'#111215',tAlign:'mid',tDia:80,tRot:0,tOff:0,tFlip:false,tSpan:200,
  bOn:true,bTxt:'ESTABLISHED 2026 • VECTOR ART',bFont:'Montserrat',bWt:'700',bSize:11,bSp:1,bCol:'#ff3ca6',bAlign:'mid',bDia:80,bRot:0,bOff:0,bFlip:false,bSpan:160,
  sym:'star',mono:'C',sScale:1,cAcc:'#ff3ca6',sCol:'#ff3ca6',r1Col:'#ff3ca6',r2Col:'#ff3ca6',cBg:'#ffffff',transp:false,r1On:false,r1Dia:94,r1W:.5,r2On:false,r2Dia:66,r2W:.3,cutOn:false,cutDia:96,cutName:'CUT',gOn:true,
- pdfPage:'art',pdfBleed:3,pdfMarks:true,pdfColor:'RGB',pdfTitle:'CIRCLE TYPE ARTWORK',pdfBar:'#1f6feb',pdfInfo:true};
+ pdfPage:'art',pdfBleed:3,pdfMarks:true,pdfColor:'RGB',pdfSpots:'all',pdfTitle:'CIRCLE TYPE ARTWORK',pdfBar:'#1f6feb',pdfInfo:true};
 const norm=o=>{const x={...DEF,...o};['sCol','r1Col','r2Col'].forEach(k=>{if(!(k in o))x[k]=x.cAcc});return x};
 const PRE={
  badge:{tTxt:'VINTAGE BADGE STUDIO • EST. 2026',bTxt:'• PREMIUM QUALITY •',tFont:'Cinzel',bFont:'Cinzel',tCol:'#1a1a1a',bCol:'#db2777',cAcc:'#db2777',tDia:78,bDia:78,tSize:13,bSize:11,r1On:true,r1Dia:94,r1W:.6,r2On:true,r2Dia:62,r2W:.3,gOn:false},
@@ -170,10 +174,36 @@ const PRE={
  minimal:{tTxt:'CIRCULAR VECTOR TYPOGRAPHY',bOn:false,tFont:'Inter',tWt:'400',sym:'none',tCol:'#000000',tSp:1.5,gOn:false},
  coaster:{tTxt:'THE CORNER CAFE',bTxt:'FRESH ROAST • DAILY',tFont:'Roboto Condensed',bFont:'Roboto Condensed',tSize:18,bSize:12,sym:'monogram',mono:'C',sCol:'#2b2118',tCol:'#2b2118',bCol:'#8a5a2b',cAcc:'#8a5a2b',tDia:70,bDia:70,r1On:true,r1Dia:88,r1W:.8,cutOn:true,cutDia:96,gOn:false},
  seal:{tTxt:'NOTARY PUBLIC • STATE OF EXAMPLE',bTxt:'COMMISSION NO. 000000',tFont:'Playfair Display',bFont:'Playfair Display',sym:'star',tCol:'#14213d',bCol:'#14213d',cAcc:'#14213d',tSize:12,bSize:9,tDia:78,bDia:78,r1On:true,r1Dia:94,r1W:.7,r2On:true,r2Dia:60,r2W:.35,gOn:false}};
-function readState(){const v={};IDS.forEach(id=>{const e=$(id);v[id]=e.type==='checkbox'?e.checked:(e.type==='range'||e.type==='number')?+e.value:e.value});return v}
-function applyState(s){IDS.forEach(id=>{if(!(id in s))return;const e=$(id);if(e.type==='checkbox')e.checked=!!s[id];else e.value=s[id]});syncNums()}
+function readState(){const v={};IDS.forEach(id=>{const e=$(id);v[id]=e.type==='checkbox'?e.checked:(e.type==='range'||e.type==='number')?+e.value:e.value});v._tx=[...txx];v._br=[...brx];return v}
+function applyState(s){ensureRings(s._tx??txx,s._br??brx);IDS.forEach(id=>{if(!(id in s))return;const e=$(id);if(e.type==='checkbox')e.checked=!!s[id];else e.value=s[id]});syncNums()}
 function syncNums(){document.querySelectorAll('input[type=range]').forEach(r=>{const n=$(r.id+'_n');if(n)n.value=+(+r.value).toFixed(2)})}
 function refreshFonts(){const bi=Object.keys(FONT_DATA),cu=Object.keys(custom).sort((x,y)=>x.localeCompare(y));document.querySelectorAll('.fs').forEach(s=>{const cur=s.value;s.innerHTML='';[['Built-in',bi],['Your fonts ('+cu.length+')',cu]].forEach(([l,ns])=>{if(!ns.length)return;const g=document.createElement('optgroup');g.label=l;ns.forEach(n=>{const o=document.createElement('option');o.textContent=o.value=n;g.appendChild(o)});s.appendChild(g)});s.value=[...bi,...cu].includes(cur)?cur:'Montserrat'})}
+
+/* ---------- dynamic rings ---------- */
+function rebuildIds(){IDS=[...IDS_BASE,...allT().flatMap(p=>RS.map(s=>p+s)),...allB().flatMap(n=>BS.map(s=>'r'+n+s))].filter(id=>$(id))}
+const lbl=p=>p==='t'?'Top ring':p==='b'?'Bottom ring':'Text ring '+p.slice(1);
+function setVals(o){Object.entries(o).forEach(([k,val])=>{const e=$(k);if(!e)return;if(e.type==='checkbox')e.checked=!!val;else e.value=val});syncNums()}
+function mountText(p){
+  $('txtRings').insertAdjacentHTML('beforeend',ringCard(p,lbl(p)+' text',true,true));refreshFonts();
+  $('txtRings').lastElementChild.querySelectorAll('input[type=color]').forEach(wireColor);
+  const d={On:true,Txt:'NEW TEXT RING',Font:'Montserrat',Wt:'700',Size:10,Sp:1,Col:$('tCol').value,Pos:'top',Align:'mid',Flip:false,Dia:60,Rot:0,Off:0,Span:120},o={};
+  for(const k in d)o[p+k]=d[k];setVals(o);
+}
+function mountBorder(n,rm){
+  $('borderRings').insertAdjacentHTML('beforeend',borderCard(n,rm));wireColor($('r'+n+'Col'));
+  if(rm)setVals({['r'+n+'On']:true,['r'+n+'Dia']:90,['r'+n+'W']:.4,['r'+n+'Col']:$('cAcc').value});
+}
+function removeText(p){const i=txx.indexOf(p);if(i>=0)txx.splice(i,1);const e=$(p+'Txt');if(e)e.closest('.card').remove();rebuildIds()}
+function removeBorder(n){const i=brx.indexOf(n);if(i>=0)brx.splice(i,1);const e=$('r'+n+'Col');if(e)e.closest('.card').remove();rebuildIds()}
+function ensureRings(tl,bl){
+  [...txx].filter(p=>!tl.includes(p)).forEach(removeText);tl.filter(p=>!txx.includes(p)).forEach(p=>{txx.push(p);mountText(p)});
+  [...brx].filter(n=>!bl.includes(n)).forEach(removeBorder);bl.filter(n=>!brx.includes(n)).forEach(n=>{brx.push(n);mountBorder(n,true)});
+  rebuildIds();
+}
+[1,2].forEach(n=>mountBorder(n,false));rebuildIds();
+$('addTx').onclick=()=>{const p='x'+(Math.max(0,...txx.map(q=>+q.slice(1)))+1);txx.push(p);mountText(p);rebuildIds();sched()};
+$('addBr').onclick=()=>{const n=Math.max(2,...brx)+1;brx.push(n);mountBorder(n,true);rebuildIds();sched()};
+document.addEventListener('click',e=>{const r=e.target.dataset&&e.target.dataset.rm;if(!r)return;if(r[0]==='x')removeText(r);else removeBorder(+r.slice(1));sched()});
 
 /* ---------- geometry ---------- */
 const rect=(x,y,w,h)=>[['M',x,y],['L',x+w,y],['L',x+w,y+h],['L',x,y+h],['Z']];
@@ -182,7 +212,7 @@ function mapPath(cmds,P){const o=[];let cx=0,cy=0;for(const c of cmds){if(c.type
 const capH=(f,sc)=>((f.tables.os2&&f.tables.os2.sCapHeight)||f.unitsPerEm*.7)*sc;
 function glyphs(f,text){const gl=[];let miss=0;for(const ch of [...text.replace(/\n/g,' ')]){const i=f.charToGlyphIndex(ch);if(i)gl.push(f.glyphs.get(i));else miss++}return{gl,miss}}
 function ring(v,p,size){
-  const f=getFont(v[p+'Font'],+v[p+'Wt']),sc=(size??v[p+'Size'])*PT/f.unitsPerEm,sp=v[p+'Sp']*U,bot=p==='b',flip=v[p+'Flip'];
+  const f=getFont(v[p+'Font'],+v[p+'Wt']),sc=(size??v[p+'Size'])*PT/f.unitsPerEm,sp=v[p+'Sp']*U,bot=v[p+'Pos']==='bottom',flip=v[p+'Flip'];
   const {gl,miss}=glyphs(f,v[p+'Txt']);
   const adv=gl.map((g,i)=>g.advanceWidth*sc+(gl[i+1]?f.getKerningValue(g,gl[i+1])*sc:0));
   const base=adv.reduce((a,b)=>a+b,0)-(gl.length?adv[gl.length-1]-gl[gl.length-1].advanceWidth*sc:0),spT=sp*Math.max(0,gl.length-1),total=base+spT;
@@ -216,11 +246,10 @@ function symbol(v,S){
 function scene(b=0){
   const v=readState(),S=[],info={};
   if(!v.transp)S.push({cmds:rect(-b,-b,1000+2*b,1000+2*b),fill:v.cBg});
-  if(v.r1On)S.push({cmds:circ(500,500,v.r1Dia*5),stroke:v.r1Col,sw:v.r1W*U});
-  if(v.r2On)S.push({cmds:circ(500,500,v.r2Dia*5),stroke:v.r2Col,sw:v.r2W*U});
+  for(const n of allB())if(v['r'+n+'On'])S.push({cmds:circ(500,500,v['r'+n+'Dia']*5),stroke:v['r'+n+'Col'],sw:v['r'+n+'W']*U});
   symbol(v,S);
-  for(const p of['t','b']){
-    if(p==='b'&&!v.bOn)continue;
+  for(const p of allT()){
+    if(v[p+'On']===false)continue;
     if(!v[p+'Txt'].trim())continue;
     const r=ring(v,p);info[p]=r;S.push({cmds:r.cmds,fill:v[p+'Col']});
   }
@@ -234,14 +263,14 @@ const svgInner=(S,pv)=>S.map(p=>p.img?`<image href="${p.img}" x="${p.x}" y="${p.
 function upd(){
   const{S,info,v}=scene();
   let g='';
-  if(v.gOn)g=`<g fill="none" stroke-width="1.5" stroke-dasharray="4 4" opacity=".7"><circle cx="500" cy="500" r="${v.tDia*5}" stroke="#26d9e8"/>${v.bOn?`<circle cx="500" cy="500" r="${v.bDia*5}" stroke="#ff3ca6"/>`:''}<path d="M500 40V960M40 500H960" stroke="#888" opacity=".5"/></g>`;
+  if(v.gOn)g=`<g fill="none" stroke-width="1.5" stroke-dasharray="4 4" opacity=".7">${allT().filter(p=>v[p+'On']!==false).map(p=>`<circle cx="500" cy="500" r="${v[p+'Dia']*5}" stroke="${v[p+'Pos']==='bottom'?'#ff3ca6':'#26d9e8'}"/>`).join('')}<path d="M500 40V960M40 500H960" stroke="#888" opacity=".5"/></g>`;
   $('art').innerHTML=svgInner(S,true)+g;
   $('paper').classList.toggle('ck',v.transp);
   $('fMono').style.display=v.sym==='monogram'?'':'none';$('fUp').style.display=v.sym==='custom'?'':'none';
-  $('bBody').style.opacity=v.bOn?1:.4;$('bBody').style.pointerEvents=v.bOn?'':'none';
-  ['t','b'].forEach(p=>{$(p+'Wt').disabled=!!custom[v[p+'Font']]});
-  const miss=(info.t?info.t.miss:0)+(info.b?info.b.miss:0);
-  $('pill').innerHTML='100 × 100 mm'+(info.t?` · top ${Math.round(info.t.span)}°`:'')+(info.b?` · bottom ${Math.round(info.b.span)}°`:'')+(miss?` · <b>${miss} character${miss>1?'s':''} missing from font</b>`:'');
+  allT().forEach(p=>{const b=$(p+'Body');if(b&&$(p+'On')){const on=v[p+'On'];b.style.opacity=on?1:.4;b.style.pointerEvents=on?'':'none'}});
+  allT().forEach(p=>{$(p+'Wt').disabled=!!custom[v[p+'Font']]});
+  const ents=Object.entries(info),miss=ents.reduce((a,[,r])=>a+r.miss,0);
+  $('pill').innerHTML='100 × 100 mm'+ents.map(([p,r])=>` · ${p==='t'?'top':p==='b'?'bottom':'ring '+p.slice(1)} ${Math.round(r.span)}°`).join('')+(miss?` · <b>${miss} character${miss>1?'s':''} missing from font</b>`:'');
   try{localStorage.setItem('cts_state',JSON.stringify({...v,_img:uploaded}))}catch(e){}
 }
 let raf=0;const sched=()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;try{upd()}catch(e){console.error(e);toast('Render error: '+e.message)}})};
@@ -249,19 +278,20 @@ document.addEventListener('input',e=>{
   const t=e.target;if(!t.id)return;
   if(t.type==='range'){const n=$(t.id+'_n');if(n)n.value=+(+t.value).toFixed(2)}
   else if(t.id.endsWith('_n')){const r=$(t.id.slice(0,-2));if(r){r.value=t.value;}}
-  if(t.id==='cAcc')['sCol','r1Col','r2Col'].forEach(k=>$(k).value=t.value);
+  if(t.id==='cAcc')['sCol',...allB().map(n=>'r'+n+'Col')].forEach(k=>{if($(k))$(k).value=t.value});
   sched();
 });
 document.addEventListener('change',sched);
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button,.pane').forEach(x=>x.classList.remove('on'));b.classList.add('on');$(b.dataset.t).classList.add('on')});
 document.querySelectorAll('.pc').forEach(c=>c.onclick=()=>{applyState(norm(PRE[c.dataset.p]));upd()});
 $('bReset').onclick=()=>{uploaded=null;applyState(DEF);upd()};
-['t','b'].forEach(p=>$(p+'Fit').onclick=()=>{
+const fit=p=>{
   const v=readState(),r=ring(v,p,10);if(!r.n)return;
   const target=v[p+'Span']*Math.PI/180*r.R,size=10*(target-r.spT)/r.base;
   if(size<4){toast('Arc too short for this text — raise the arc angle or reduce spacing');return}
   $(p+'Size').value=Math.min(72,Math.round(size*10)/10);syncNums();upd();
-});
+};
+document.addEventListener('click',e=>{const i=e.target.id;if(i&&/Fit$/.test(i))fit(i.slice(0,-3))});
 $('up').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{uploaded=r.result;upd()};r.readAsDataURL(f)};
 $('bFont').onclick=()=>$('fFont').click();$('bFolder').onclick=()=>$('fFolder').click();
 const fname=(ft,f)=>{const n=ft.names||{},g=k=>n[k]&&(n[k].en||Object.values(n[k])[0]);return g('fullName')||((g('fontFamily')||'')+' '+(g('fontSubfamily')||'')).trim()||f.name.replace(/\.\w+$/,'')};
@@ -295,7 +325,7 @@ function parseASE(buf){
   while(n-->0&&p+6<=dv.byteLength){
     const ty=dv.getUint16(p),len=dv.getUint32(p+2);p+=6;const end=p+len;
     if(ty===0xC001)grp=rd();else if(ty===0xC002)grp='';
-    else if(ty===1){const name=rd(),m=String.fromCharCode(dv.getUint8(p),dv.getUint8(p+1),dv.getUint8(p+2),dv.getUint8(p+3)).trim();p+=4;const c={RGB:3,CMYK:4,LAB:3,Gray:1}[m];if(c){const v=[];for(let i=0;i<c;i++){v.push(dv.getFloat32(p));p+=4}out.push({n:name,g:grp,h:aseHex(m,v)})}}
+    else if(ty===1){const name=rd(),m=String.fromCharCode(dv.getUint8(p),dv.getUint8(p+1),dv.getUint8(p+2),dv.getUint8(p+3)).trim();p+=4;const c={RGB:3,CMYK:4,LAB:3,Gray:1}[m];if(c){const v=[];for(let i=0;i<c;i++){v.push(dv.getFloat32(p));p+=4}{const h=aseHex(m,v);out.push({n:name,g:grp,h,k:m==='CMYK'?v.map(x=>Math.max(0,Math.min(1,x))):cmyk(h),s:dv.getUint16(p)===1})}}}
     p=end;
   }
   return out;
@@ -315,13 +345,14 @@ function openPop(btn,inp){
   pop.style.left=Math.max(8,Math.min(innerWidth-pw-8,r.right-pw))+'px';
   pop.style.top=(r.bottom+ph+10>innerHeight?Math.max(8,r.top-ph-6):r.bottom+6)+'px';
 }
-document.querySelectorAll('input[type=color]').forEach(inp=>{
+function wireColor(inp){if(inp.dataset.w)return;inp.dataset.w=1;
   const w=document.createElement('div');w.className='cw';inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
   const b=document.createElement('button');b.type='button';b.className='pb';b.title='Pick from loaded palette';
   b.innerHTML='<svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M1 1h4v4H1zM6 1h4v4H6zM11 1h4v4h-4zM1 6h4v4H1zM6 6h4v4H6zM11 6h4v4h-4zM1 11h4v4H1zM6 11h4v4H6z"/></svg>';
   b.onclick=e=>{e.stopPropagation();if(!pal||!pal.c.length){$('fAse').click();return}openPop(b,inp)};
   w.appendChild(b);
-});
+}
+document.querySelectorAll('input[type=color]').forEach(wireColor);
 document.addEventListener('click',e=>{if(!pop.contains(e.target))closePop()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closePop()});
 $('bAse').onclick=()=>$('fAse').click();
@@ -360,16 +391,28 @@ async function rasterise(url){
   for(let i=0,j=0,k=0;i<d.length;i+=4,j+=3,k++){rgbA[j]=d[i];rgbA[j+1]=d[i+1];rgbA[j+2]=d[i+2];al[k]=d[i+3];if(d[i+3]<255)ha=true}
   return{w,h,rgb:rgbA,a:ha?al:null};
 }
+const palEntry=(h,mode)=>{if(mode==='off'||!pal)return null;const e=pal.c.find(c=>c.h.toLowerCase()===h.toLowerCase());return e&&(mode==='all'||e.s)?e:null};
+function spotInfo(){
+  const o=readState(),{S}=scene(0),nm=new Set(),add=h=>{const e=palEntry(h,o.pdfSpots);if(e)nm.add(e.n)};
+  S.forEach(p=>{if(p.spot)return;if(p.fill)add(p.fill);if(p.stroke)add(p.stroke)});if(o.pdfPage!=='art')add(o.pdfBar);
+  const l=[...nm];if(o.cutOn)l.push((o.cutName||'CUT')+' (cut line)');
+  $('spotInfo').textContent=l.length?'Named spots in this PDF: '+l.join(', '):(pal?'No palette colours are used in the design, so no named spots will be written.':'Load an .ase palette and pick colours from it to write named spots.');
+}
 async function buildPDF(){
   const o=readState(),sheet=o.pdfPage!=='art',bleed=sheet?0:Math.max(0,o.pdfBleed||0),{S,info}=scene(bleed*U);
   const A=100*MM,k=A/1000,cm=o.pdfColor==='CMYK';
   let W,H,ox,oy,pad=0;
   if(sheet){[W,H]=SZ[o.pdfPage].map(x=>x*MM);ox=(W-A)/2;oy=H-38*MM-A}
   else{pad=(o.pdfMarks?bleed+9:bleed)*MM;W=H=A+2*pad;ox=oy=pad}
-  const fc=h=>cm?cmyk(h).map(n4).join(' ')+' k':rgb(h).map(n4).join(' ')+' rg';
-  const sc=h=>cm?cmyk(h).map(n4).join(' ')+' K':rgb(h).map(n4).join(' ')+' RG';
-  const spot=[...(o.cutName||'CUT')].map(ch=>/[A-Za-z0-9_-]/.test(ch)?ch:'#'+(ch.charCodeAt(0)&255).toString(16).padStart(2,'0')).join('');
-  const c=[],P=s=>c.push(s),imgs=[];let useSpot=false;
+  const pfc=h=>cm?cmyk(h).map(n4).join(' ')+' k':rgb(h).map(n4).join(' ')+' rg';
+  const psc=h=>cm?cmyk(h).map(n4).join(' ')+' K':rgb(h).map(n4).join(' ')+' RG';
+  const spots=[],spIdx=(name,alt)=>{let i=spots.findIndex(s=>s.n===name);if(i<0){spots.push({n:name,alt});i=spots.length-1}return i};
+  const pe=h=>palEntry(h,o.pdfSpots);
+  const fc=h=>{const e=pe(h);return e?`/CS${spIdx(e.n,e.k||cmyk(e.h))} cs 1 scn`:pfc(h)};
+  const sc=h=>{const e=pe(h);return e?`/CS${spIdx(e.n,e.k||cmyk(e.h))} CS 1 SCN`:psc(h)};
+  const lab=h=>{const e=pe(h);return e?`${e.n} (spot) ${h.toUpperCase()}`:h.toUpperCase()};
+  const encN=s0=>{const s=[...s0].map(ch=>/[A-Za-z0-9_-]/.test(ch)?ch:'#'+(ch.charCodeAt(0)&255).toString(16).padStart(2,'0')).join('');return /^(all|none)$/i.test(s)?s+'_':s};
+  const c=[],P=s=>c.push(s),imgs=[];
   const txt=(font,size,x,y,s,col)=>P(`BT ${font} ${size} Tf ${col} ${n4(x)} ${n4(y)} Td (${esc(s)}) Tj ET`);
   const dark=cm?'0 0 0 0.8 k':'0.2 g';
   if(!sheet&&o.pdfMarks){
@@ -387,16 +430,13 @@ async function buildPDF(){
       let y=oy-9*MM;const wn={400:'Regular',700:'Bold',900:'Black'};
       const line=s=>{txt('/F2',9,ox,y,s,dark);y-=5*MM};
       txt('/F1',9,ox,y,'FONTS',dark);y-=5*MM;
-      if(info.t)line(`Top ring: ${o.tFont} ${wn[o.tWt]||''}, ${o.tSize} pt, ${o.tDia} mm dia.`);
-      if(info.b)line(`Bottom ring: ${o.bFont} ${wn[o.bWt]||''}, ${o.bSize} pt, ${o.bDia} mm dia.`);
-      y-=2*MM;txt('/F1',9,ox,y,'COLOURS',dark);y-=5.5*MM;
-      const sw=(label,hex,sp)=>{P('q');if(sp){useSpot=true;P('/CS0 cs 1 scn')}else P(fc(hex));P(`${n4(ox)} ${n4(y-1*MM)} ${n4(3.5*MM)} ${n4(3.5*MM)} re f Q`);txt('/F2',9,ox+6*MM,y,label,dark);y-=5.5*MM};
-      if(info.t)sw('Top text '+o.tCol.toUpperCase(),o.tCol);
-      if(info.b)sw('Bottom text '+o.bCol.toUpperCase(),o.bCol);
-      if(o.sym!=='none')sw('Symbol '+o.sCol.toUpperCase(),o.sCol);
-      if(o.r1On)sw('Border ring 1 '+o.r1Col.toUpperCase(),o.r1Col);
-      if(o.r2On)sw('Border ring 2 '+o.r2Col.toUpperCase(),o.r2Col);
-      if(!o.transp)sw('Background '+o.cBg.toUpperCase(),o.cBg);
+      for(const p of Object.keys(info))line(`${lbl(p)}: ${o[p+'Font']} ${wn[o[p+'Wt']]||''}, ${o[p+'Size']} pt, ${o[p+'Dia']} mm dia.`);
+      y-=2*MM;txt('/F1',9,ox,y,'COLOURS / NAMED SPOTS',dark);y-=5.5*MM;
+      const sw=(label,hex,sp)=>{P('q');if(sp)P(`/CS${spIdx(o.cutName||'CUT',[0,1,0,0])} cs 1 scn`);else P(fc(hex));P(`${n4(ox)} ${n4(y-1*MM)} ${n4(3.5*MM)} ${n4(3.5*MM)} re f Q`);txt('/F2',9,ox+6*MM,y,label,dark);y-=5.5*MM};
+      for(const p of Object.keys(info))sw(lbl(p)+' '+lab(o[p+'Col']),o[p+'Col']);
+      if(o.sym!=='none')sw('Symbol '+lab(o.sCol),o.sCol);
+      for(const n of allB())if(o['r'+n+'On'])sw('Border ring '+n+' '+lab(o['r'+n+'Col']),o['r'+n+'Col']);
+      if(!o.transp)sw('Background '+lab(o.cBg),o.cBg);
       if(o.cutOn)sw('Spot "'+o.cutName+'" - cut line (named spot colour)',null,true);
     }
     P('Q');
@@ -406,7 +446,7 @@ async function buildPDF(){
   for(const p of S){
     if(p.img){imgs.push(p);P(`q ${n4(p.w)} 0 0 ${n4(-p.h)} ${n4(p.x)} ${n4(p.y+p.h)} cm /Im${imgs.length-1} Do Q`);continue}
     P('q');if(p.fill)P(fc(p.fill));
-    if(p.stroke){if(p.spot){useSpot=true;P('/CS0 CS 1 SCN')}else P(sc(p.stroke));P(`${n4(p.sw)} w 1 J 1 j`)}
+    if(p.stroke){if(p.spot)P(`/CS${spIdx(o.cutName||'CUT',[0,1,0,0])} CS 1 SCN`);else P(sc(p.stroke));P(`${n4(p.sw)} w 1 J 1 j`)}
     P(p.cmds.map(opS).join(' '));P(p.fill&&p.stroke?'B':p.fill?'f':'S');P('Q');
   }
   P('Q');
@@ -416,7 +456,7 @@ async function buildPDF(){
   const plain=(i,s)=>{begin(i);str(s+'\nendobj\n')};
   const strm=async(i,dict,bytes)=>{const z=await deflate(bytes);if(z){dict+=' /Filter /FlateDecode';bytes=z}begin(i);str(`<< ${dict} /Length ${bytes.length} >>\nstream\n`);push(bytes);str('\nendstream\nendobj\n')};
   const nImg=imgs.length,total=8+nImg*2;
-  const csRes=useSpot?`/ColorSpace << /CS0 [/Separation /${spot} /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [0 1 0 0] /N 1 >>] >>`:'';
+  const csRes=spots.length?'/ColorSpace << '+spots.map((s,i)=>`/CS${i} [/Separation /${encN(s.n)} /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [${s.alt.map(n4).join(' ')}] /N 1 >>]`).join(' ')+' >>':'';
   const xo=nImg?`/XObject << ${imgs.map((_,i)=>`/Im${i} ${8+i*2} 0 R`).join(' ')} >>`:'';
   push(new Uint8Array([37,80,68,70,45,49,46,54,10,37,226,227,207,211,10]));
   plain(1,'<< /Type /Catalog /Pages 2 0 R >>');
@@ -438,8 +478,8 @@ async function buildPDF(){
   return new Blob(parts,{type:'application/pdf'});
 }
 const modSync=()=>{const s=$('pdfPage').value!=='art';$('optArt').style.display=s?'none':'';$('optSheet').style.display=s?'':'none'};
-$('bPdf').onclick=()=>{modSync();$('mod').classList.add('on')};
-$('pdfPage').onchange=modSync;
+$('bPdf').onclick=()=>{modSync();spotInfo();$('mod').classList.add('on')};
+$('pdfPage').onchange=modSync;$('mod').addEventListener('change',spotInfo);$('mod').addEventListener('input',spotInfo);
 $('mCancel').onclick=()=>$('mod').classList.remove('on');
 $('mod').onclick=e=>{if(e.target===$('mod'))$('mod').classList.remove('on')};
 $('mGo').onclick=async()=>{
