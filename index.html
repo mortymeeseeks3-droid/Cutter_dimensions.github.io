@@ -281,7 +281,17 @@ document.addEventListener('input',e=>{
   if(t.id==='cAcc')['sCol',...allB().map(n=>'r'+n+'Col')].forEach(k=>{if($(k))$(k).value=t.value});
   sched();
 });
-document.addEventListener('change',sched);
+document.addEventListener('change',e=>{
+  // Font menus need an explicit render on change (not just the generic input path).
+  // This is delegated so it also covers dynamically-added text rings.
+  if(e.target && e.target.matches('select.fs')){
+    const id=e.target.id;
+    if(id && $(id)) $(id).value=e.target.value;
+    sched();
+    return;
+  }
+  sched();
+});
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button,.pane').forEach(x=>x.classList.remove('on'));b.classList.add('on');$(b.dataset.t).classList.add('on')});
 document.querySelectorAll('.pc').forEach(c=>c.onclick=()=>{applyState(norm(PRE[c.dataset.p]));upd()});
 $('bReset').onclick=()=>{uploaded=null;applyState(DEF);upd()};
