@@ -281,7 +281,9 @@ function symbol(v,S){
 }
 function scene(b=0){
   const v=readState(),S=[],info={};
-  const outer=shapePath(v,-b/U);if(!v.transp)S.push({cmds:outer,fill:v.cBg,stroke:v.cAcc,sw:.45*U});else S.push({cmds:outer,stroke:v.cAcc,sw:.45*U});
+  // The artwork boundary is a fill/clip shape, not an uncontrolled border ring.
+  // Only user-created border rings below should draw visible outlines.
+  const outer=shapePath(v,-b/U);if(!v.transp)S.push({cmds:outer,fill:v.cBg});
   for(const n of allB())if(v['r'+n+'On'])S.push({cmds:shapePath(v,Math.min(shapeDims(v).w,shapeDims(v).h)*(100-v['r'+n+'Dia'])/200),stroke:v['r'+n+'Col'],sw:v['r'+n+'W']*U});
   symbol(v,S);
   for(const p of allT()){
