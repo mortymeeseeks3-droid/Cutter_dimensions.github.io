@@ -139,7 +139,7 @@ ${sl(p+'Dia','Ring diameter',20,98,.5,'mm')}${sl(p+'Rot','Rotation',-180,180,1,'
 <div class="fit"><span>Fit to</span><input type="number" id="${p}Span" min="10" max="360"><span>° arc</span><button class="sm" id="${p}Fit">Auto-fit size</button></div></div></div>`;
 const borderCard=(n,rm)=>`<div class="card"><div class="ct"><span>Border ring ${n}</span><span style="display:flex;gap:8px;align-items:center"><label class="chk"><input type="checkbox" id="r${n}On"> On</label>${rm?`<button class="sm" data-rm="r${n}">Remove</button>`:''}</span></div>${sl('r'+n+'Dia','Diameter',20,100,.5,'mm')}${sl('r'+n+'W','Line width',.1,10,.05,'mm')}<div class="field"><label>Colour</label><input type="color" id="r${n}Col"></div></div>`;
 $('p1').innerHTML=`<div class="card"><div class="ct">Your fonts</div><div class="g2"><button class="sm" id="bFolder">Load font folder…</button><button class="sm" id="bFont">Load font file(s)…</button></div><div class="muted" id="fontInfo">TTF, OTF and WOFF are supported (not WOFF2). Fonts are used for the preview and embedded as outlines in exports.</div></div>`+ringCard('t','Top ring text')+ringCard('b','Bottom ring text',true)+'<div id="txtRings"></div><button class="sm" id="addTx" style="width:100%;margin-bottom:12px">+ Add text ring</button>';
-$('p2').innerHTML=`<div class="card"><div class="ct"><span>Colour palette</span><button class="sm" id="bAse">Load .ase…</button></div><div class="muted" id="palInfo" style="margin:0">No palette loaded. Once loaded, swatches appear at the bottom of the preview — pick a target there, then click a swatch.</div><div class="row"><button class="sm" id="palClear" style="display:none">Remove palette</button></div></div><div class="card"><div class="ct">Centre symbol</div>
+$('p2').innerHTML=`<div class="card"><div class="ct">Artwork shape</div><div class="field"><label>Shape</label><select id="shapeType"><option value="circle">Circle</option><option value="square">Square</option><option value="rectangle">Rectangle</option><option value="oval">Oval</option></select></div>${sl('shapeW','Width',20,100,.5,'mm')}<div id="shapeHField">${sl('shapeH','Height',20,100,.5,'mm')}</div><div class="muted">The shape is centred on the 100 × 100 mm artboard. Text and border rings follow its outline.</div></div><div class="card"><div class="ct"><span>Colour palette</span><button class="sm" id="bAse">Load .ase…</button></div><div class="muted" id="palInfo" style="margin:0">No palette loaded. Once loaded, swatches appear at the bottom of the preview — pick a target there, then click a swatch.</div><div class="row"><button class="sm" id="palClear" style="display:none">Remove palette</button></div></div><div class="card"><div class="ct">Centre symbol</div>
 <div class="field"><select id="sym"><option value="star">Five-point star</option><option value="crest">Shield crest</option><option value="vinyl">Vinyl record</option><option value="anchor">Anchor</option><option value="monogram">Monogram</option><option value="custom">Custom image / SVG</option><option value="none">None</option></select></div>
 <div class="field" id="fMono"><label>Monogram (max 3)</label><input id="mono" maxlength="3"></div>
 <div class="field" id="fUp"><label>Image (PNG / JPG / SVG)</label><input type="file" id="up" accept="image/png,image/jpeg,image/svg+xml"></div>
@@ -158,11 +158,11 @@ $('p3').innerHTML=`<div class="presets">
 <div class="pc" data-p="seal">${ic('<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="7"/><path d="M12 8l1.2 2.6 2.8.3-2.1 1.9.6 2.8-2.5-1.4-2.5 1.4.6-2.8L8 10.9l2.8-.3z"/>')}Notary seal</div></div>`;
 
 /* ---------- state ---------- */
-const IDS_BASE=['sym','mono','sScale','cAcc','sCol','cBg','transp','cutOn','cutDia','cutName','gOn','pdfPage','pdfBleed','pdfMarks','pdfColor','pdfSpots','pdfTitle','pdfBar','pdfInfo'];
+const IDS_BASE=['shapeType','shapeW','shapeH','sym','mono','sScale','cAcc','sCol','cBg','transp','cutOn','cutDia','cutName','gOn','pdfPage','pdfBleed','pdfMarks','pdfColor','pdfSpots','pdfTitle','pdfBar','pdfInfo'];
 let IDS=[];const txx=[],brx=[];
 const allT=()=>['t','b',...txx],allB=()=>[1,2,...brx];
 const RS=['Txt','Font','Wt','Size','Sp','Col','Align','Dia','Rot','Off','Flip','Span','Pos','On'],BS=['On','Dia','W','Col'];
-const DEF={tPos:'top',bPos:'bottom',_tx:[],_br:[],tTxt:'CIRCULAR TYPOGRAPHY STUDIO',tFont:'Montserrat',tWt:'700',tSize:14,tSp:1,tCol:'#111215',tAlign:'mid',tDia:80,tRot:0,tOff:0,tFlip:false,tSpan:200,
+const DEF={shapeType:'circle',shapeW:100,shapeH:100,tPos:'top',bPos:'bottom',_tx:[],_br:[],tTxt:'CIRCULAR TYPOGRAPHY STUDIO',tFont:'Montserrat',tWt:'700',tSize:14,tSp:1,tCol:'#111215',tAlign:'mid',tDia:80,tRot:0,tOff:0,tFlip:false,tSpan:200,
  bOn:true,bTxt:'ESTABLISHED 2026 • VECTOR ART',bFont:'Montserrat',bWt:'700',bSize:11,bSp:1,bCol:'#ff3ca6',bAlign:'mid',bDia:80,bRot:0,bOff:0,bFlip:false,bSpan:160,
  sym:'star',mono:'C',sScale:1,cAcc:'#ff3ca6',sCol:'#ff3ca6',r1Col:'#ff3ca6',r2Col:'#ff3ca6',cBg:'#ffffff',transp:false,r1On:false,r1Dia:94,r1W:.5,r2On:false,r2Dia:66,r2W:.3,cutOn:false,cutDia:96,cutName:'CUT',gOn:true,
  pdfPage:'art',pdfBleed:3,pdfMarks:true,pdfColor:'RGB',pdfSpots:'all',pdfTitle:'CIRCLE TYPE ARTWORK',pdfBar:'#1f6feb',pdfInfo:true};
@@ -208,15 +208,51 @@ document.addEventListener('click',e=>{const r=e.target.dataset&&e.target.dataset
 /* ---------- geometry ---------- */
 const rect=(x,y,w,h)=>[['M',x,y],['L',x+w,y],['L',x+w,y+h],['L',x,y+h],['Z']];
 const circ=(cx,cy,r)=>{const k=.5522847498*r;return[['M',cx+r,cy],['C',cx+r,cy+k,cx+k,cy+r,cx,cy+r],['C',cx-k,cy+r,cx-r,cy+k,cx-r,cy],['C',cx-r,cy-k,cx-k,cy-r,cx,cy-r],['C',cx+k,cy-r,cx+r,cy-k,cx+r,cy],['Z']]};
+function shapeDims(v){let w=Math.max(1,+v.shapeW||100),h=Math.max(1,+v.shapeH||100);if(v.shapeType==='circle')h=w;if(v.shapeType==='square')h=w;return{w,h}}
+function insetAmount(inset){if(typeof inset==='object'&&inset)return (Number(inset.x)||0);return Number(inset)||0}
+function shapePolyline(v,inset=0){
+ const {w:W,h:H}=shapeDims(v),d=insetAmount(inset),cx=500,cy=500,rx=Math.max(1,(W/2-d)*U),ry=Math.max(1,(H/2-d)*U);
+ if(v.shapeType==='circle'){const pts=[];for(let i=0;i<=1440;i++){const a=-Math.PI/2+i*Math.PI*2/1440;pts.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)])}return pts}
+ if(v.shapeType==='oval'){
+   // A true parallel offset: move each ellipse point along its unit normal.
+   // This keeps the gap to the original oval consistent instead of scaling X/Y independently.
+   const pts=[],baseRx=Math.max(1,W*U/2),baseRy=Math.max(1,H*U/2);
+   for(let i=0;i<=1440;i++){const a=-Math.PI/2+i*Math.PI*2/1440,co=Math.cos(a),si=Math.sin(a),nx=co/baseRx,ny=si/baseRy,nl=Math.hypot(nx,ny)||1;pts.push([cx+baseRx*co-d*U*nx/nl,cy+baseRy*si-d*U*ny/nl])}
+   return pts;
+ }
+ // Rectangle and square paths are inset by the same physical distance on every edge.
+ const x1=cx-rx,x2=cx+rx,y1=cy-ry,y2=cy+ry;
+ return [[x1,y1],[x2,y1],[x2,y2],[x1,y2],[x1,y1]];
+}
+function shapePath(v,inset=0){
+ const d=insetAmount(inset),{w:W,h:H}=shapeDims(v),cx=500,cy=500;
+ if(v.shapeType==='circle')return circ(cx,cy,Math.max(1,(W/2-d)*U));
+ if(v.shapeType==='oval'||Math.abs(d)>.0001){const pts=shapePolyline(v,d);return [['M',...pts[0]],...pts.slice(1).map(p=>['L',...p]),['Z']]}
+ return rect(cx-W*U/2,cy-H*U/2,W*U,H*U);
+}
+function pathMetrics(pts){const cum=[0];let total=0;for(let i=1;i<pts.length;i++){total+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);cum.push(total)}return{cum,total,pts}}
+function pathAt(m,d){const L=m.total;d=((d%L)+L)%L;let lo=0,hi=m.cum.length-1;while(lo<hi){const mid=(lo+hi)>>1;if(m.cum[mid]<d)lo=mid+1;else hi=mid}const i=Math.max(1,lo),a=m.pts[i-1],b=m.pts[i],seg=m.cum[i]-m.cum[i-1]||1,t=(d-m.cum[i-1])/seg,dx=(b[0]-a[0])/seg,dy=(b[1]-a[1])/seg;return{x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t,tx:dx,ty:dy}}
 function mapPath(cmds,P){const o=[];let cx=0,cy=0;for(const c of cmds){if(c.type==='M'||c.type==='L'){o.push([c.type,...P(c.x,c.y)]);cx=c.x;cy=c.y}else if(c.type==='C'){o.push(['C',...P(c.x1,c.y1),...P(c.x2,c.y2),...P(c.x,c.y)]);cx=c.x;cy=c.y}else if(c.type==='Q'){o.push(['C',...P(cx+2/3*(c.x1-cx),cy+2/3*(c.y1-cy)),...P(c.x+2/3*(c.x1-c.x),c.y+2/3*(c.y1-c.y)),...P(c.x,c.y)]);cx=c.x;cy=c.y}else o.push(['Z'])}return o}
 const capH=(f,sc)=>((f.tables.os2&&f.tables.os2.sCapHeight)||f.unitsPerEm*.7)*sc;
 function glyphs(f,text){const gl=[];let miss=0;for(const ch of [...text.replace(/\n/g,' ')]){const i=f.charToGlyphIndex(ch);if(i)gl.push(f.glyphs.get(i));else miss++}return{gl,miss}}
 function ring(v,p,size){
   const f=getFont(v[p+'Font'],+v[p+'Wt']),sc=(size??v[p+'Size'])*PT/f.unitsPerEm,sp=v[p+'Sp']*U,bot=v[p+'Pos']==='bottom',flip=v[p+'Flip'];
+  if(v.shapeType!=='circle'){
+    const {gl,miss}=glyphs(f,v[p+'Txt']);
+    const adv=gl.map((g,i)=>g.advanceWidth*sc+(gl[i+1]?f.getKerningValue(g,gl[i+1])*sc:0));
+    const base=adv.reduce((a,b)=>a+b,0)-(gl.length?adv[gl.length-1]-gl[gl.length-1].advanceWidth*sc:0),spT=sp*Math.max(0,gl.length-1),total=base+spT;
+    const dir=(bot?-1:1)*(flip?-1:1),dims=shapeDims(v),inset=Math.min(dims.w,dims.h)*(100-v[p+'Dia'])/200-dir*v[p+'Off'],metrics=pathMetrics(shapePolyline(v,inset)),per=metrics.total,c=capH(f,sc)/2,rot=v[p+'Rot']*Math.PI/180*per/(2*Math.PI),al=v[p+'Align'];
+    let x=al==='start'?0:al==='end'?-total:-total/2;const cmds=[];
+    gl.forEach((g,i)=>{const gw=g.advanceWidth*sc,d=(bot?per/2:0)+rot+dir*(x+gw/2),pt=pathAt(metrics,d),tx=pt.tx*dir,ty=pt.ty*dir,ux=ty,uy=-tx,dx=-ux,dy=-uy;
+      const ox=pt.x-tx*gw/2-ux*c,oy=pt.y-ty*gw/2-uy*c;
+      cmds.push(...mapPath(g.getPath(0,0,f.unitsPerEm).commands,(X,Y)=>[ox+tx*X*sc+dx*Y*sc,oy+ty*X*sc+dy*Y*sc]));x+=adv[i]+sp;
+    });
+    return{cmds,miss,base,spT,R:per/(2*Math.PI),span:total/per*360,n:gl.length};
+  }
   const {gl,miss}=glyphs(f,v[p+'Txt']);
   const adv=gl.map((g,i)=>g.advanceWidth*sc+(gl[i+1]?f.getKerningValue(g,gl[i+1])*sc:0));
   const base=adv.reduce((a,b)=>a+b,0)-(gl.length?adv[gl.length-1]-gl[gl.length-1].advanceWidth*sc:0),spT=sp*Math.max(0,gl.length-1),total=base+spT;
-  const R=v[p+'Dia']*5+(bot?-1:1)*(flip?-1:1)*v[p+'Off']*U,dir=(bot?-1:1)*(flip?-1:1),c=capH(f,sc)/2;
+  const R=Math.max(1,shapeDims(v).w*v[p+'Dia']/200*U)+(bot?-1:1)*(flip?-1:1)*v[p+'Off']*U,dir=(bot?-1:1)*(flip?-1:1),c=capH(f,sc)/2;
   const pr=(bot?Math.PI/2:-Math.PI/2)+v[p+'Rot']*Math.PI/180,al=v[p+'Align'];
   let x=al==='start'?0:al==='end'?-total:-total/2;const cmds=[];
   gl.forEach((g,i)=>{
@@ -245,15 +281,15 @@ function symbol(v,S){
 }
 function scene(b=0){
   const v=readState(),S=[],info={};
-  if(!v.transp)S.push({cmds:rect(-b,-b,1000+2*b,1000+2*b),fill:v.cBg});
-  for(const n of allB())if(v['r'+n+'On'])S.push({cmds:circ(500,500,v['r'+n+'Dia']*5),stroke:v['r'+n+'Col'],sw:v['r'+n+'W']*U});
+  const outer=shapePath(v,-b/U);if(!v.transp)S.push({cmds:outer,fill:v.cBg,stroke:v.cAcc,sw:.45*U});else S.push({cmds:outer,stroke:v.cAcc,sw:.45*U});
+  for(const n of allB())if(v['r'+n+'On'])S.push({cmds:shapePath(v,Math.min(shapeDims(v).w,shapeDims(v).h)*(100-v['r'+n+'Dia'])/200),stroke:v['r'+n+'Col'],sw:v['r'+n+'W']*U});
   symbol(v,S);
   for(const p of allT()){
     if(v[p+'On']===false)continue;
     if(!v[p+'Txt'].trim())continue;
     const r=ring(v,p);info[p]=r;S.push({cmds:r.cmds,fill:v[p+'Col']});
   }
-  if(v.cutOn)S.push({cmds:circ(500,500,v.cutDia*5),stroke:'#ff00ff',sw:2.5,spot:v.cutName||'CUT'});
+  if(v.cutOn)S.push({cmds:shapePath(v,Math.min(shapeDims(v).w,shapeDims(v).h)*(100-v.cutDia)/200),stroke:'#ff00ff',sw:2.5,spot:v.cutName||'CUT'});
   return{S,info,v};
 }
 const D=c=>c.map(a=>a[0]+a.slice(1).map(n=>+n.toFixed(2)).join(' ')).join('');
@@ -263,14 +299,17 @@ const svgInner=(S,pv)=>S.map(p=>p.img?`<image href="${p.img}" x="${p.x}" y="${p.
 function upd(){
   const{S,info,v}=scene();
   let g='';
-  if(v.gOn)g=`<g fill="none" stroke-width="1.5" stroke-dasharray="4 4" opacity=".7">${allT().filter(p=>v[p+'On']!==false).map(p=>`<circle cx="500" cy="500" r="${v[p+'Dia']*5}" stroke="${v[p+'Pos']==='bottom'?'#ff3ca6':'#26d9e8'}"/>`).join('')}<path d="M500 40V960M40 500H960" stroke="#888" opacity=".5"/></g>`;
+  if(v.gOn)g=`<g fill="none" stroke-width="1.5" stroke-dasharray="4 4" opacity=".7">${allT().filter(p=>v[p+'On']!==false).map(p=>`<path d="${D(shapePath(v,Math.min(shapeDims(v).w,shapeDims(v).h)*(100-v[p+'Dia'])/200))}" stroke="${v[p+'Pos']==='bottom'?'#ff3ca6':'#26d9e8'}"/>`).join('')}<path d="M500 40V960M40 500H960" stroke="#888" opacity=".5"/></g>`;
   $('art').innerHTML=svgInner(S,true)+g;
   $('paper').classList.toggle('ck',v.transp);
+  $('shapeHField').style.display=(v.shapeType==='circle'||v.shapeType==='square')?'none':'';
+  if(v.shapeType==='circle'||v.shapeType==='square')$('shapeH_n').value=$('shapeH').value=$('shapeW').value;
+  $('paper').querySelector('.dim').textContent=`${shapeDims(v).w} × ${shapeDims(v).h} mm`;
   $('fMono').style.display=v.sym==='monogram'?'':'none';$('fUp').style.display=v.sym==='custom'?'':'none';
   allT().forEach(p=>{const b=$(p+'Body');if(b&&$(p+'On')){const on=v[p+'On'];b.style.opacity=on?1:.4;b.style.pointerEvents=on?'':'none'}});
   allT().forEach(p=>{$(p+'Wt').disabled=!!custom[v[p+'Font']]});
   const ents=Object.entries(info),miss=ents.reduce((a,[,r])=>a+r.miss,0);
-  $('pill').innerHTML='100 × 100 mm'+ents.map(([p,r])=>` · ${p==='t'?'top':p==='b'?'bottom':'ring '+p.slice(1)} ${Math.round(r.span)}°`).join('')+(miss?` · <b>${miss} character${miss>1?'s':''} missing from font</b>`:'');
+  $('pill').innerHTML=`${shapeDims(v).w} × ${shapeDims(v).h} mm ${v.shapeType}`+ents.map(([p,r])=>` · ${p==='t'?'top':p==='b'?'bottom':'ring '+p.slice(1)} ${Math.round(r.span)}°`).join('')+(miss?` · <b>${miss} character${miss>1?'s':''} missing from font</b>`:'');
   try{localStorage.setItem('cts_state',JSON.stringify({...v,_img:uploaded}))}catch(e){}
 }
 let raf=0;const sched=()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;try{upd()}catch(e){console.error(e);toast('Render error: '+e.message)}})};
@@ -279,11 +318,13 @@ document.addEventListener('input',e=>{
   if(t.type==='range'){const n=$(t.id+'_n');if(n)n.value=+(+t.value).toFixed(2)}
   else if(t.id.endsWith('_n')){const r=$(t.id.slice(0,-2));if(r){r.value=t.value;}}
   if(t.id==='cAcc')['sCol',...allB().map(n=>'r'+n+'Col')].forEach(k=>{if($(k))$(k).value=t.value});
+  if((t.id==='shapeW'||t.id==='shapeW_n')&&['circle','square'].includes($('shapeType').value)){$('shapeH').value=$('shapeW').value;$('shapeH_n').value=$('shapeW').value}
   sched();
 });
 document.addEventListener('change',e=>{
   // Font menus need an explicit render on change (not just the generic input path).
   // This is delegated so it also covers dynamically-added text rings.
+  if(e.target && e.target.id==='shapeType' && ['circle','square'].includes(e.target.value)){$('shapeH').value=$('shapeW').value;$('shapeH_n').value=$('shapeW').value}
   if(e.target && e.target.matches('select.fs')){
     const id=e.target.id;
     if(id && $(id)) $(id).value=e.target.value;
