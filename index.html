@@ -129,6 +129,11 @@ main{height:calc(100dvh - 50px);grid-template-columns:clamp(350px,28vw,450px) mi
 }
 @media(max-width:820px) and (max-height:520px){aside{height:62dvh}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+#art [data-el]{cursor:pointer}#art #selG{pointer-events:none}
+.card.selc{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+.selbar{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:5px;background:rgba(14,17,22,.94);border:1px solid var(--line);border-radius:999px;padding:5px 6px 5px 14px;font-size:12px;color:var(--txt);z-index:5;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.45)}
+.selbar.on{display:flex}.selbar b{color:var(--blue);font-weight:600;margin-right:4px}.selbar .k{color:var(--mut);margin-right:4px}.selbar button{padding:4px 9px;min-width:32px}
+@media(max-width:820px){.selbar{top:56px;max-width:calc(100% - 16px);overflow-x:auto}.selbar .k{display:none}.selbar button{min-height:36px}}
 </style>
 </head>
 <body>
@@ -153,6 +158,7 @@ main{height:calc(100dvh - 50px);grid-template-columns:clamp(350px,28vw,450px) mi
   <div class="tools"><button class="sm" id="zo">−</button><button class="sm" id="zf">Fit</button><button class="sm" id="zi">+</button></div>
   <div class="paper" id="paper"><svg id="art" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg"></svg><div class="dim">100 mm</div></div>
   <div class="pill" id="pill">Ready</div>
+  <div class="selbar" id="selbar"></div>
 </section>
 </main>
 <div id="nailWorkspace" aria-label="Label generator workspace">
@@ -207,13 +213,20 @@ ${sl(p+'Size','Size',4,72,.5,'pt')}${sl(p+'Sp','Letter spacing',-1,10,.05,'mm')}
 <div class="g2"><div class="field"><label>Alignment</label><select id="${p}Align"><option value="mid">Centre</option><option value="start">Start</option><option value="end">End</option></select></div><div class="field"><label>&nbsp;</label><label class="chk"><input type="checkbox" id="${p}Flip"> Flip direction</label></div></div>
 ${sl(p+'Dia','Ring diameter',20,98,.5,'mm')}${sl(p+'Rot','Rotation',-180,180,1,'°')}${sl(p+'Off','Raise / lower',-20,20,.1,'mm')}
 <div class="fit"><span>Fit to</span><input type="number" id="${p}Span" min="10" max="360"><span>° arc</span><button class="sm" id="${p}Fit">Auto-fit size</button></div></div></div>`;
+const lineCard=p=>`<div class="card"><div class="ct"><span>Straight text ${p.slice(1)}</span><span style="display:flex;gap:8px;align-items:center"><label class="chk"><input type="checkbox" id="${p}On"> Enabled</label><button class="sm" data-rm="${p}">Remove</button></span></div><div id="${p}Body">
+<textarea id="${p}Txt" spellcheck="false"></textarea>
+<div class="g2"><div class="field"><label>Font</label><select id="${p}Font" class="fs"></select></div><div class="field"><label>Weight</label><select id="${p}Wt"><option value="400">Regular</option><option value="700">Bold</option><option value="900">Black</option></select></div></div>
+${sl(p+'Size','Size',4,72,.5,'pt')}${sl(p+'Sp','Letter spacing',-1,10,.05,'mm')}${sl(p+'Lead','Line spacing',.6,3,.05,'×')}
+<div class="g2"><div class="field"><label>Colour</label><input type="color" id="${p}Col"></div><div class="field"><label>Alignment</label><select id="${p}Align"><option value="start">Left</option><option value="mid">Centre</option><option value="end">Right</option></select></div></div>
+${sl(p+'X','Position X',-50,50,.01,'mm')}${sl(p+'Y','Position Y',-50,50,.01,'mm')}${sl(p+'Rot','Rotation',-180,180,.5,'°')}
+<div class="g2" style="margin-top:4px"><button class="sm" data-rot="${p}:-90">Rotate −90°</button><button class="sm" data-rot="${p}:90">Rotate +90°</button></div><button class="sm" data-ctr="${p}" style="width:100%;margin-top:8px">Centre on artwork</button></div></div>`;
 const borderCard=(n,rm)=>`<div class="card"><div class="ct"><span>Border ring ${n}</span><span style="display:flex;gap:8px;align-items:center"><label class="chk"><input type="checkbox" id="r${n}On"> On</label>${rm?`<button class="sm" data-rm="r${n}">Remove</button>`:''}</span></div>${sl('r'+n+'Dia','Diameter',20,100,.5,'mm')}${sl('r'+n+'W','Line width',.1,10,.05,'mm')}<div class="field"><label>Colour</label><input type="color" id="r${n}Col"></div></div>`;
-$('p1').innerHTML=`<div class="card"><div class="ct">Your fonts</div><div class="g2"><button class="sm" id="bFolder">Load font folder…</button><button class="sm" id="bFont">Load font file(s)…</button></div><div class="muted" id="fontInfo">TTF, OTF and WOFF are supported (not WOFF2). Fonts are used for the preview and embedded as outlines in exports.</div></div>`+ringCard('t','Top ring text')+ringCard('b','Bottom ring text',true)+'<div id="txtRings"></div><button class="sm" id="addTx" style="width:100%;margin-bottom:12px">+ Add text ring</button>';
+$('p1').innerHTML=`<div class="card"><div class="ct">Your fonts</div><div class="g2"><button class="sm" id="bFolder">Load font folder…</button><button class="sm" id="bFont">Load font file(s)…</button></div><div class="muted" id="fontInfo">TTF, OTF and WOFF are supported (not WOFF2). Fonts are used for the preview and embedded as outlines in exports.</div></div>`+ringCard('t','Top ring text')+ringCard('b','Bottom ring text',true)+'<div id="txtRings"></div><button class="sm" id="addTx" style="width:100%;margin-bottom:12px">+ Add text ring</button><div id="txtLines"></div><button class="sm" id="addLn" style="width:100%">+ Add straight text</button><div class="muted" style="margin:6px 2px 12px">Straight text can be placed anywhere and rotated. Click any element on the artwork to select it, then nudge with the arrow keys (Shift = 1 mm) and rotate text with [ and ]. Esc deselects.</div>';
 $('p2').innerHTML=`<div class="card"><div class="ct">Artwork shape</div><div class="field"><label>Shape</label><select id="shapeType"><option value="circle">Circle</option><option value="square">Square</option><option value="rectangle">Rectangle</option><option value="oval">Oval</option></select></div>${sl('shapeW','Width',20,100,.5,'mm')}<div id="shapeHField">${sl('shapeH','Height',20,100,.5,'mm')}</div><div class="muted">The shape is centred on the 100 × 100 mm artboard. Text and border rings follow its outline.</div></div><div class="card"><div class="ct"><span>Colour palette</span><button class="sm" id="bAse">Load .ase…</button></div><div class="muted" id="palInfo" style="margin:0">No palette loaded. Once loaded, swatches appear at the bottom of the preview — pick a target there, then click a swatch.</div><div class="row"><button class="sm" id="palClear" style="display:none">Remove palette</button></div></div><div class="card"><div class="ct">Centre symbol</div>
 <div class="field"><select id="sym"><option value="star">Five-point star</option><option value="crest">Shield crest</option><option value="vinyl">Vinyl record</option><option value="anchor">Anchor</option><option value="monogram">Monogram</option><option value="custom">Custom image / SVG</option><option value="none">None</option></select></div>
 <div class="field" id="fMono"><label>Monogram (max 3)</label><input id="mono" maxlength="3"></div>
 <div class="field" id="fUp"><label>Image (PNG / JPG / SVG)</label><input type="file" id="up" accept="image/png,image/jpeg,image/svg+xml"></div>
-${sl('sScale','Symbol scale',.2,10,.05,'×')}</div>
+${sl('sScale','Symbol scale',.2,10,.05,'×')}${sl('sX','Position X',-50,50,.01,'mm')}${sl('sY','Position Y',-50,50,.01,'mm')}<button class="sm" id="sCtr" style="width:100%;margin-top:4px">Centre symbol</button><div class="muted">Click the symbol on the artwork to select it, then nudge with the arrow keys or drag it.</div></div>
 <div class="card"><div class="ct">Colours</div><div class="g2"><div class="field"><label>Accent (sets symbol &amp; rings)</label><input type="color" id="cAcc"></div><div class="field"><label>Background</label><input type="color" id="cBg"></div></div><div class="field"><label>Symbol</label><input type="color" id="sCol"></div><div class="row"><label class="chk"><input type="checkbox" id="transp"> Transparent background</label></div></div>
 <div id="borderRings"></div><button class="sm" id="addBr" style="width:100%;margin-bottom:12px">+ Add border ring</button>
 <div class="card"><div class="ct"><span>Cut line (spot colour)</span><label class="chk"><input type="checkbox" id="cutOn"> On</label></div>${sl('cutDia','Cut diameter',20,100,.5,'mm')}<div class="field"><label>Spot colour name</label><input id="cutName"></div></div>
@@ -228,11 +241,11 @@ $('p3').innerHTML=`<div class="presets">
 <div class="pc" data-p="seal">${ic('<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="7"/><path d="M12 8l1.2 2.6 2.8.3-2.1 1.9.6 2.8-2.5-1.4-2.5 1.4.6-2.8L8 10.9l2.8-.3z"/>')}Notary seal</div></div>`;
 
 /* ---------- state ---------- */
-const IDS_BASE=['shapeType','shapeW','shapeH','sym','mono','sScale','cAcc','sCol','cBg','transp','cutOn','cutDia','cutName','gOn','pdfPage','pdfBleed','pdfMarks','pdfColor','pdfSpots','pdfTitle','pdfBar','pdfInfo'];
-let IDS=[];const txx=[],brx=[];
+const IDS_BASE=['shapeType','shapeW','shapeH','sym','mono','sScale','sX','sY','cAcc','sCol','cBg','transp','cutOn','cutDia','cutName','gOn','pdfPage','pdfBleed','pdfMarks','pdfColor','pdfSpots','pdfTitle','pdfBar','pdfInfo'];
+let IDS=[];const txx=[],brx=[],lnx=[];const allL=()=>[...lnx],LS=['On','Txt','Font','Wt','Size','Sp','Lead','Col','Align','X','Y','Rot'];
 const allT=()=>['t','b',...txx],allB=()=>[1,2,...brx];
 const RS=['Txt','Font','Wt','Size','Sp','Col','Align','Dia','Rot','Off','Flip','Span','Pos','On'],BS=['On','Dia','W','Col'];
-const DEF={shapeType:'circle',shapeW:100,shapeH:100,tPos:'top',bPos:'bottom',_tx:[],_br:[],tTxt:'CIRCULAR TYPOGRAPHY STUDIO',tFont:'Montserrat',tWt:'700',tSize:14,tSp:1,tCol:'#111215',tAlign:'mid',tDia:80,tRot:0,tOff:0,tFlip:false,tSpan:200,
+const DEF={shapeType:'circle',shapeW:100,shapeH:100,tPos:'top',bPos:'bottom',_tx:[],_br:[],_ln:[],sX:0,sY:0,tTxt:'CIRCULAR TYPOGRAPHY STUDIO',tFont:'Montserrat',tWt:'700',tSize:14,tSp:1,tCol:'#111215',tAlign:'mid',tDia:80,tRot:0,tOff:0,tFlip:false,tSpan:200,
  bOn:true,bTxt:'ESTABLISHED 2026 • VECTOR ART',bFont:'Montserrat',bWt:'700',bSize:11,bSp:1,bCol:'#ff3ca6',bAlign:'mid',bDia:80,bRot:0,bOff:0,bFlip:false,bSpan:160,
  sym:'star',mono:'C',sScale:1,cAcc:'#ff3ca6',sCol:'#ff3ca6',r1Col:'#ff3ca6',r2Col:'#ff3ca6',cBg:'#ffffff',transp:false,r1On:false,r1Dia:94,r1W:.5,r2On:false,r2Dia:66,r2W:.3,cutOn:false,cutDia:96,cutName:'CUT',gOn:true,
  pdfPage:'art',pdfBleed:3,pdfMarks:true,pdfColor:'RGB',pdfSpots:'all',pdfTitle:'CIRCLE TYPE ARTWORK',pdfBar:'#1f6feb',pdfInfo:true};
@@ -244,13 +257,13 @@ const PRE={
  minimal:{tTxt:'CIRCULAR VECTOR TYPOGRAPHY',bOn:false,tFont:'Inter',tWt:'400',sym:'none',tCol:'#000000',tSp:1.5,gOn:false},
  coaster:{tTxt:'THE CORNER CAFE',bTxt:'FRESH ROAST • DAILY',tFont:'Roboto Condensed',bFont:'Roboto Condensed',tSize:18,bSize:12,sym:'monogram',mono:'C',sCol:'#2b2118',tCol:'#2b2118',bCol:'#8a5a2b',cAcc:'#8a5a2b',tDia:70,bDia:70,r1On:true,r1Dia:88,r1W:.8,cutOn:true,cutDia:96,gOn:false},
  seal:{tTxt:'NOTARY PUBLIC • STATE OF EXAMPLE',bTxt:'COMMISSION NO. 000000',tFont:'Playfair Display',bFont:'Playfair Display',sym:'star',tCol:'#14213d',bCol:'#14213d',cAcc:'#14213d',tSize:12,bSize:9,tDia:78,bDia:78,r1On:true,r1Dia:94,r1W:.7,r2On:true,r2Dia:60,r2W:.35,gOn:false}};
-function readState(){const v={};IDS.forEach(id=>{const e=$(id);v[id]=e.type==='checkbox'?e.checked:(e.type==='range'||e.type==='number')?+e.value:e.value});v._tx=[...txx];v._br=[...brx];return v}
-function applyState(s){ensureRings(s._tx??txx,s._br??brx);IDS.forEach(id=>{if(!(id in s))return;const e=$(id);if(e.type==='checkbox')e.checked=!!s[id];else e.value=s[id]});syncNums()}
+function readState(){const v={};IDS.forEach(id=>{const e=$(id);v[id]=e.type==='checkbox'?e.checked:(e.type==='range'||e.type==='number')?+e.value:e.value});v._tx=[...txx];v._br=[...brx];v._ln=[...lnx];return v}
+function applyState(s){ensureRings(s._tx??txx,s._br??brx);ensureLines(s._ln??lnx);IDS.forEach(id=>{if(!(id in s))return;const e=$(id);if(e.type==='checkbox')e.checked=!!s[id];else e.value=s[id]});syncNums()}
 function syncNums(){document.querySelectorAll('input[type=range]').forEach(r=>{const n=$(r.id+'_n');if(n)n.value=+(+r.value).toFixed(2)})}
 function refreshFonts(){const bi=Object.keys(FONT_DATA),cu=Object.keys(custom).sort((x,y)=>x.localeCompare(y));document.querySelectorAll('.fs').forEach(s=>{const cur=s.value;s.innerHTML='';[['Built-in',bi],['Your fonts ('+cu.length+')',cu]].forEach(([l,ns])=>{if(!ns.length)return;const g=document.createElement('optgroup');g.label=l;ns.forEach(n=>{const o=document.createElement('option');o.textContent=o.value=n;g.appendChild(o)});s.appendChild(g)});s.value=[...bi,...cu].includes(cur)?cur:'Montserrat'})}
 
 /* ---------- dynamic rings ---------- */
-function rebuildIds(){IDS=[...IDS_BASE,...allT().flatMap(p=>RS.map(s=>p+s)),...allB().flatMap(n=>BS.map(s=>'r'+n+s))].filter(id=>$(id))}
+function rebuildIds(){IDS=[...IDS_BASE,...allT().flatMap(p=>RS.map(s=>p+s)),...allB().flatMap(n=>BS.map(s=>'r'+n+s)),...allL().flatMap(p=>LS.map(s=>p+s))].filter(id=>$(id))}
 const lbl=p=>p==='t'?'Top ring':p==='b'?'Bottom ring':'Text ring '+p.slice(1);
 function setVals(o){Object.entries(o).forEach(([k,val])=>{const e=$(k);if(!e)return;if(e.type==='checkbox')e.checked=!!val;else e.value=val});syncNums()}
 function mountText(p){
@@ -270,10 +283,22 @@ function ensureRings(tl,bl){
   [...brx].filter(n=>!bl.includes(n)).forEach(removeBorder);bl.filter(n=>!brx.includes(n)).forEach(n=>{brx.push(n);mountBorder(n,true)});
   rebuildIds();
 }
+function mountLine(p){
+  $('txtLines').insertAdjacentHTML('beforeend',lineCard(p));refreshFonts();
+  $('txtLines').lastElementChild.querySelectorAll('input[type=color]').forEach(wireColor);
+  const d={On:true,Txt:'STRAIGHT TEXT',Font:$('tFont').value||'Montserrat',Wt:'700',Size:12,Sp:.5,Lead:1.2,Col:$('tCol').value,Align:'mid',X:0,Y:0,Rot:0},o={};
+  for(const k in d)o[p+k]=d[k];setVals(o);
+}
+function removeLine(p){const i=lnx.indexOf(p);if(i>=0)lnx.splice(i,1);const e=$(p+'Txt');if(e)e.closest('.card').remove();rebuildIds()}
+function ensureLines(ll){[...lnx].filter(p=>!ll.includes(p)).forEach(removeLine);ll.filter(p=>!lnx.includes(p)).forEach(p=>{lnx.push(p);mountLine(p)});rebuildIds()}
 [1,2].forEach(n=>mountBorder(n,false));rebuildIds();
 $('addTx').onclick=()=>{const p='x'+(Math.max(0,...txx.map(q=>+q.slice(1)))+1);txx.push(p);mountText(p);rebuildIds();sched()};
+$('addLn').onclick=()=>{const p='l'+(Math.max(0,...lnx.map(q=>+q.slice(1)))+1);lnx.push(p);mountLine(p);rebuildIds();upd();select(p)};
+$('sCtr').onclick=()=>{setVals({sX:0,sY:0});sched()};
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-rot],[data-ctr]');if(!t)return;
+  if(t.dataset.ctr){const p=t.dataset.ctr;setVals({[p+'X']:0,[p+'Y']:0})}else{const [p,d]=t.dataset.rot.split(':');bump(p+'Rot',+d)}sched()});
 $('addBr').onclick=()=>{const n=Math.max(2,...brx)+1;brx.push(n);mountBorder(n,true);rebuildIds();sched()};
-document.addEventListener('click',e=>{const r=e.target.dataset&&e.target.dataset.rm;if(!r)return;if(r[0]==='x')removeText(r);else removeBorder(+r.slice(1));sched()});
+document.addEventListener('click',e=>{const r=e.target.dataset&&e.target.dataset.rm;if(!r)return;if(r[0]==='x')removeText(r);else if(r[0]==='l')removeLine(r);else removeBorder(+r.slice(1));sched()});
 
 /* ---------- geometry ---------- */
 const rect=(x,y,w,h)=>[['M',x,y],['L',x+w,y],['L',x+w,y+h],['L',x,y+h],['Z']];
@@ -334,55 +359,75 @@ function ring(v,p,size){
   });
   return{cmds,miss,base,spT,R,span:total/R*180/Math.PI,n:gl.length};
 }
-function monoCmds(v,s){
+function monoCmds(v,s,ox=500,oy=500){
   const f=getFont(v.tFont,900),sc=90*s/f.unitsPerEm,{gl}=glyphs(f,(v.mono||'C').toUpperCase());
-  const tot=gl.reduce((a,g)=>a+g.advanceWidth*sc,0);let x=500-tot/2;const y=500+capH(f,sc)/2,out=[];
+  const tot=gl.reduce((a,g)=>a+g.advanceWidth*sc,0);let x=ox-tot/2;const y=oy+capH(f,sc)/2,out=[];
   gl.forEach(g=>{const x0=x;out.push(...mapPath(g.getPath(0,0,f.unitsPerEm).commands,(X,Y)=>[x0+X*sc,y+Y*sc]));x+=g.advanceWidth*sc});return out;
 }
 const parseD=d=>d.match(/[MLCZ][^MLCZ]*/g).map(s=>[s[0],...s.slice(1).split(/[ ,]+/).filter(Boolean).map(Number)]);
 function symbol(v,S){
-  const s=+v.sScale,T=cm=>cm.map(c=>[c[0],...c.slice(1).map(n=>500+n*s)]),a=v.sCol;
+  const s=+v.sScale,ox=500+(+v.sX||0)*U,oy=500+(+v.sY||0)*U,T=cm=>cm.map(c=>[c[0],...c.slice(1).map((n,i)=>(i%2?oy:ox)+n*s)]),a=v.sCol;
   if(v.sym==='star')S.push({cmds:T(parseD('M 0,-60 L 18,-18 L 60,-18 L 24,10 L 38,54 L 0,26 L -38,54 L -24,10 L -60,-18 L -18,-18 Z')),fill:a});
   else if(v.sym==='crest')S.push({cmds:T(parseD('M 0,-70 C 40,-70 60,-50 60,-20 C 60,40 0,75 0,75 C 0,75 -60,40 -60,-20 C -60,-50 -40,-70 0,-70 Z')),stroke:a,sw:6*s});
   else if(v.sym==='anchor')S.push({cmds:T(parseD('M 0,-60 L 0,50 M -40,10 C -40,55 40,55 40,10 M -20,-30 L 20,-30')),stroke:a,sw:8*s});
-  else if(v.sym==='vinyl'){S.push({cmds:circ(500,500,70*s),fill:'#111111'},{cmds:circ(500,500,25*s),fill:a},{cmds:circ(500,500,6*s),fill:'#ffffff'})}
-  else if(v.sym==='monogram')S.push({cmds:monoCmds(v,s),fill:v.sCol});
-  else if(v.sym==='custom'&&uploaded)S.push({img:uploaded,x:500-75*s,y:500-75*s,w:150*s,h:150*s});
+  else if(v.sym==='vinyl'){S.push({cmds:circ(ox,oy,70*s),fill:'#111111'},{cmds:circ(ox,oy,25*s),fill:a},{cmds:circ(ox,oy,6*s),fill:'#ffffff'})}
+  else if(v.sym==='monogram')S.push({cmds:monoCmds(v,s,ox,oy),fill:v.sCol});
+  else if(v.sym==='custom'&&uploaded)S.push({img:uploaded,x:ox-75*s,y:oy-75*s,w:150*s,h:150*s});
+}
+/* straight text: lines split on Enter, anchored at X/Y (mm from centre), rotated about the anchor */
+function textLine(v,p){
+  const f=getFont(v[p+'Font'],+v[p+'Wt']),size=+v[p+'Size'],sc=size*PT/f.unitsPerEm,sp=(+v[p+'Sp']||0)*U,pitch=size*PT*(+v[p+'Lead']||1.2);
+  const rows=String(v[p+'Txt']).split('\n'),n=rows.length,c=capH(f,sc),al=v[p+'Align'];
+  const ax=500+(+v[p+'X']||0)*U,ay=500+(+v[p+'Y']||0)*U,a=(+v[p+'Rot']||0)*Math.PI/180,co=Math.cos(a),si=Math.sin(a);
+  const R=(x,y)=>[ax+x*co-y*si,ay+x*si+y*co],cmds=[];let miss=0;
+  rows.forEach((row,i)=>{
+    const g=glyphs(f,row),gl=g.gl;miss+=g.miss;
+    const adv=gl.map((q,j)=>q.advanceWidth*sc+(gl[j+1]?f.getKerningValue(q,gl[j+1])*sc:0));
+    const total=adv.reduce((s,w)=>s+w,0)+sp*Math.max(0,gl.length-1),by=(i-(n-1)/2)*pitch+c/2;
+    let x=al==='start'?0:al==='end'?-total:-total/2;
+    gl.forEach((q,j)=>{const x0=x;cmds.push(...mapPath(q.getPath(0,0,f.unitsPerEm).commands,(X,Y)=>R(x0+X*sc,by+Y*sc)));x+=adv[j]+sp});
+  });
+  return{cmds,miss};
 }
 function scene(b=0){
-  const v=readState(),S=[],info={};
+  const v=readState(),S=[],info={},lines={};
   // The artwork boundary is a fill/clip shape, not an uncontrolled border ring.
   // Only user-created border rings below should draw visible outlines.
   const outer=shapePath(v,-b/U);if(!v.transp)S.push({cmds:outer,fill:v.cBg});
   for(const n of allB())if(v['r'+n+'On'])S.push({cmds:shapePath(v,Math.min(shapeDims(v).w,shapeDims(v).h)*(100-v['r'+n+'Dia'])/200),stroke:v['r'+n+'Col'],sw:v['r'+n+'W']*U});
-  symbol(v,S);
+  {const k=S.length;symbol(v,S);for(let i=k;i<S.length;i++)S[i].el='sym'}
   for(const p of allT()){
     if(v[p+'On']===false)continue;
     if(!v[p+'Txt'].trim())continue;
-    const r=ring(v,p);info[p]=r;S.push({cmds:r.cmds,fill:v[p+'Col']});
+    const r=ring(v,p);info[p]=r;S.push({cmds:r.cmds,fill:v[p+'Col'],el:p});
+  }
+  for(const p of allL()){
+    if(v[p+'On']===false||!String(v[p+'Txt']).trim())continue;
+    const r=textLine(v,p);lines[p]=r;S.push({cmds:r.cmds,fill:v[p+'Col'],el:p});
   }
   if(v.cutOn)S.push({cmds:shapePath(v,Math.min(shapeDims(v).w,shapeDims(v).h)*(100-v.cutDia)/200),stroke:'#ff00ff',sw:2.5,spot:v.cutName||'CUT'});
-  return{S,info,v};
+  return{S,info,v,lines};
 }
 const D=c=>c.map(a=>a[0]+a.slice(1).map(n=>+n.toFixed(2)).join(' ')).join('');
-const svgInner=(S,pv)=>S.map(p=>p.img?`<image href="${p.img}" x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}"/>`:`<path d="${D(p.cmds)}" fill="${p.fill||'none'}"${p.stroke?` stroke="${p.stroke}" stroke-width="${p.sw}" stroke-linecap="round" stroke-linejoin="round"${p.spot?(pv?' stroke-dasharray="18 10"':' id="cut-line"'):''}`:''}/>`).join('');
+const svgInner=(S,pv)=>S.map(p=>p.img?`<image${pv&&p.el?` data-el="${p.el}"`:''} href="${p.img}" x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}"/>`:`<path${pv&&p.el?` data-el="${p.el}"`:''} d="${D(p.cmds)}" fill="${p.fill||'none'}"${p.stroke?` stroke="${p.stroke}" stroke-width="${p.sw}" stroke-linecap="round" stroke-linejoin="round"${p.spot?(pv?' stroke-dasharray="18 10"':' id="cut-line"'):''}`:''}/>`).join('');
 
 /* ---------- render ---------- */
 function upd(){
-  const{S,info,v}=scene();
+  const{S,info,v,lines}=scene();
   let g='';
-  if(v.gOn)g=`<g fill="none" stroke-width="1.5" stroke-dasharray="4 4" opacity=".7">${allT().filter(p=>v[p+'On']!==false).map(p=>`<path d="${D(shapePath(v,Math.min(shapeDims(v).w,shapeDims(v).h)*(100-v[p+'Dia'])/200))}" stroke="${v[p+'Pos']==='bottom'?'#ff3ca6':'#26d9e8'}"/>`).join('')}<path d="M500 40V960M40 500H960" stroke="#888" opacity=".5"/></g>`;
-  $('art').innerHTML=svgInner(S,true)+g;
+  if(v.gOn)g=`<g fill="none" stroke-width="1.5" stroke-dasharray="4 4" opacity=".7" pointer-events="none">${allT().filter(p=>v[p+'On']!==false).map(p=>`<path d="${D(shapePath(v,Math.min(shapeDims(v).w,shapeDims(v).h)*(100-v[p+'Dia'])/200))}" stroke="${v[p+'Pos']==='bottom'?'#ff3ca6':'#26d9e8'}"/>`).join('')}<path d="M500 40V960M40 500H960" stroke="#888" opacity=".5"/></g>`;
+  $('art').innerHTML=svgInner(S,true)+g+'<g id="selG"></g>';
   $('paper').classList.toggle('ck',v.transp);
   $('shapeHField').style.display=(v.shapeType==='circle'||v.shapeType==='square')?'none':'';
   if(v.shapeType==='circle'||v.shapeType==='square')$('shapeH_n').value=$('shapeH').value=$('shapeW').value;
   $('paper').querySelector('.dim').textContent=`${shapeDims(v).w} × ${shapeDims(v).h} mm`;
   $('fMono').style.display=v.sym==='monogram'?'':'none';$('fUp').style.display=v.sym==='custom'?'':'none';
-  allT().forEach(p=>{const b=$(p+'Body');if(b&&$(p+'On')){const on=v[p+'On'];b.style.opacity=on?1:.4;b.style.pointerEvents=on?'':'none'}});
-  allT().forEach(p=>{$(p+'Wt').disabled=!!custom[v[p+'Font']]});
-  const ents=Object.entries(info),miss=ents.reduce((a,[,r])=>a+r.miss,0);
+  [...allT(),...allL()].forEach(p=>{const b=$(p+'Body');if(b&&$(p+'On')){const on=v[p+'On'];b.style.opacity=on?1:.4;b.style.pointerEvents=on?'':'none'}});
+  [...allT(),...allL()].forEach(p=>{$(p+'Wt').disabled=!!custom[v[p+'Font']]});
+  const ents=Object.entries(info),miss=[...ents.map(e=>e[1]),...Object.values(lines)].reduce((a,r)=>a+r.miss,0);
   $('pill').innerHTML=`${shapeDims(v).w} × ${shapeDims(v).h} mm ${v.shapeType}`+ents.map(([p,r])=>` · ${p==='t'?'top':p==='b'?'bottom':'ring '+p.slice(1)} ${Math.round(r.span)}°`).join('')+(miss?` · <b>${miss} character${miss>1?'s':''} missing from font</b>`:'');
   try{localStorage.setItem('cts_state',JSON.stringify({...v,_img:uploaded}))}catch(e){}
+  drawSel();
 }
 let raf=0;const sched=()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;try{upd()}catch(e){console.error(e);toast('Render error: '+e.message)}})};
 document.addEventListener('input',e=>{
@@ -522,7 +567,7 @@ function spotInfo(){
   $('spotInfo').textContent=l.length?'Named spots in this PDF: '+l.join(', '):(pal?'No palette colours are used in the design, so no named spots will be written.':'Load an .ase palette and pick colours from it to write named spots.');
 }
 async function buildPDF(){
-  const o=readState(),sheet=o.pdfPage!=='art',bleed=sheet?0:Math.max(0,o.pdfBleed||0),{S,info}=scene(bleed*U);
+  const o=readState(),sheet=o.pdfPage!=='art',bleed=sheet?0:Math.max(0,o.pdfBleed||0),{S,info,lines}=scene(bleed*U);
   const A=100*MM,k=A/1000,cm=o.pdfColor==='CMYK';
   let W,H,ox,oy,pad=0;
   if(sheet){[W,H]=SZ[o.pdfPage].map(x=>x*MM);ox=(W-A)/2;oy=H-38*MM-A}
@@ -554,9 +599,11 @@ async function buildPDF(){
       const line=s=>{txt('/F2',9,ox,y,s,dark);y-=5*MM};
       txt('/F1',9,ox,y,'FONTS',dark);y-=5*MM;
       for(const p of Object.keys(info))line(`${lbl(p)}: ${o[p+'Font']} ${wn[o[p+'Wt']]||''}, ${o[p+'Size']} pt, ${o[p+'Dia']} mm dia.`);
+       for(const p of Object.keys(lines))line(`Straight text ${p.slice(1)}: ${o[p+'Font']} ${wn[o[p+'Wt']]||''}, ${o[p+'Size']} pt`);
       y-=2*MM;txt('/F1',9,ox,y,'COLOURS / NAMED SPOTS',dark);y-=5.5*MM;
       const sw=(label,hex,sp)=>{P('q');if(sp)P(`/CS${spIdx(o.cutName||'CUT',[0,1,0,0])} cs 1 scn`);else P(fc(hex));P(`${n4(ox)} ${n4(y-1*MM)} ${n4(3.5*MM)} ${n4(3.5*MM)} re f Q`);txt('/F2',9,ox+6*MM,y,label,dark);y-=5.5*MM};
       for(const p of Object.keys(info))sw(lbl(p)+' '+lab(o[p+'Col']),o[p+'Col']);
+       for(const p of Object.keys(lines))sw('Straight text '+p.slice(1)+' '+lab(o[p+'Col']),o[p+'Col']);
       if(o.sym!=='none')sw('Symbol '+lab(o.sCol),o.sCol);
       for(const n of allB())if(o['r'+n+'On'])sw('Border ring '+n+' '+lab(o['r'+n+'Col']),o['r'+n+'Col']);
       if(!o.transp)sw('Background '+lab(o.cBg),o.cBg);
@@ -611,9 +658,108 @@ $('mGo').onclick=async()=>{
   b.disabled=false;b.textContent='Download PDF';
 };
 
+/* ---------- selection, keyboard nudging & dragging ---------- */
+var selEl=null,drag=null;
+const elKind=p=>p==='sym'?'sym':p[0]==='l'?'line':'ring';
+const elName=p=>p==='sym'?'Symbol / logo':p[0]==='l'?'Straight text '+p.slice(1):lbl(p);
+function elExists(p){if(!p)return false;if(p==='sym')return $('sym').value!=='none';if(p[0]==='l')return lnx.includes(p);return allT().includes(p)&&!!$(p+'Txt')}
+function cardOf(p){const e=$(p==='sym'?'sScale':p+'Txt');return e&&e.closest('.card')}
+function bump(id,d){const e=$(id);if(!e)return;let x=+e.value+d;if(/Rot$/.test(id))x=((x+180)%360+360)%360-180;e.value=Math.round(x*100)/100;const n=$(id+'_n');if(n)n.value=+(+e.value).toFixed(2)}
+function select(p){
+  selEl=elExists(p)?p:null;
+  document.querySelectorAll('.card.selc').forEach(c=>c.classList.remove('selc'));
+  if(selEl){const c=cardOf(selEl);if(c){c.classList.add('selc');const pane=c.closest('.pane');if(pane&&pane.classList.contains('on'))c.scrollIntoView({block:'nearest',behavior:'smooth'})}}
+  selBar();drawSel();
+}
+function selBar(){
+  const b=$('selbar');if(!selEl){b.classList.remove('on');b.innerHTML='';return}
+  const k=elKind(selEl),hint=k==='ring'?'←→ move along ring · ↑↓ raise / lower':k==='line'?'Arrows nudge · Shift = 1 mm · [ ] rotate':'Arrows nudge · Shift = 1 mm · drag to move';
+  b.innerHTML=`<b>${elName(selEl)}</b><span class="k">${hint}</span><button class="sm" data-n="-1,0" title="Left">←</button><button class="sm" data-n="0,-1" title="Up">↑</button><button class="sm" data-n="0,1" title="Down">↓</button><button class="sm" data-n="1,0" title="Right">→</button>`+(k==='line'?'<button class="sm" data-r="-1" title="Rotate anticlockwise">⟲</button><button class="sm" data-r="1" title="Rotate clockwise">⟳</button>':'')+'<button class="sm" data-x="1" title="Deselect (Esc)">✕</button>';
+  b.classList.add('on');
+}
+function drawSel(){
+  const g=$('selG');if(!g)return;g.innerHTML='';
+  if(selEl&&!elExists(selEl)){select(null);return}
+  if(!selEl)return;
+  const els=[...$('art').querySelectorAll(`[data-el="${selEl}"]`)];if(!els.length)return;
+  let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;
+  els.forEach(e=>{const b=e.getBBox();x1=Math.min(x1,b.x);y1=Math.min(y1,b.y);x2=Math.max(x2,b.x+b.width);y2=Math.max(y2,b.y+b.height)});
+  const pd=6,k=elKind(selEl);let s=`<rect x="${x1-pd}" y="${y1-pd}" width="${x2-x1+2*pd}" height="${y2-y1+2*pd}" fill="rgba(31,111,235,.06)" stroke="#1f6feb" stroke-width="1.5" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"/>`;
+  if(k!=='ring'){const v=readState(),ax=500+(+(k==='sym'?v.sX:v[selEl+'X'])||0)*U,ay=500+(+(k==='sym'?v.sY:v[selEl+'Y'])||0)*U;
+    s+=`<path d="M${ax-12} ${ay}H${ax+12}M${ax} ${ay-12}V${ay+12}" stroke="#1f6feb" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`}
+  g.innerHTML=s;
+}
+function nudge(dx,dy,step){
+  const p=selEl;if(!p)return;const k=elKind(p);
+  if(k==='sym'){bump('sX',dx*step);bump('sY',dy*step)}
+  else if(k==='line'){bump(p+'X',dx*step);bump(p+'Y',dy*step)}
+  else{const bot=$(p+'Pos').value==='bottom';if(dx)bump(p+'Rot',dx*(bot?-1:1)*(step>=1?10:1));if(dy)bump(p+'Off',-dy*step)}
+  sched();
+}
+function rotateSel(d){if(selEl&&elKind(selEl)!=='sym'){bump(selEl+'Rot',d);sched()}}
+document.addEventListener('keydown',e=>{
+  if(!selEl||e.ctrlKey||e.metaKey)return;
+  const t=e.target;if(t&&t.closest&&t.closest('input,textarea,select,[contenteditable="true"]'))return;
+  if($('mod').classList.contains('on')||$('nailWorkspace').classList.contains('on'))return;
+  const st=e.shiftKey?1:.1;let ok=true;
+  switch(e.key){
+    case 'ArrowLeft':nudge(-1,0,st);break;case 'ArrowRight':nudge(1,0,st);break;
+    case 'ArrowUp':nudge(0,-1,st);break;case 'ArrowDown':nudge(0,1,st);break;
+    case 'Escape':select(null);break;
+    default:
+      if(e.code==='BracketLeft')rotateSel(e.shiftKey?-15:-1);
+      else if(e.code==='BracketRight')rotateSel(e.shiftKey?15:1);
+      else ok=false;
+  }
+  if(ok)e.preventDefault();
+});
+$('selbar').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.n){const [x,y]=b.dataset.n.split(',').map(Number);nudge(x,y,e.shiftKey?1:.1)}
+  else if(b.dataset.r)rotateSel(+b.dataset.r*(e.shiftKey?15:1));
+  else if(b.dataset.x)select(null);
+});
+/* find the element under the pointer: exact hit, then a few px of tolerance, then the box of the symbol / straight text */
+function pickAt(x,y,target){
+  const hit=target&&target.closest&&target.closest('[data-el]');if(hit)return hit.dataset.el;
+  for(const r of [3,6,9])for(let a=0;a<8;a++){const el=document.elementFromPoint(x+r*Math.cos(a*Math.PI/4),y+r*Math.sin(a*Math.PI/4)),h=el&&el.closest&&el.closest('#art [data-el]');if(h)return h.dataset.el}
+  const box={};$('art').querySelectorAll('[data-el]').forEach(e=>{const p=e.dataset.el;if(elKind(p)==='ring')return;const r=e.getBoundingClientRect(),b=box[p]||(box[p]={x1:1e9,y1:1e9,x2:-1e9,y2:-1e9});b.x1=Math.min(b.x1,r.left);b.y1=Math.min(b.y1,r.top);b.x2=Math.max(b.x2,r.right);b.y2=Math.max(b.y2,r.bottom)});
+  let best=null,ba=1e18;for(const [p,b] of Object.entries(box)){if(x>=b.x1-4&&x<=b.x2+4&&y>=b.y1-4&&y<=b.y2+4){const a=(b.x2-b.x1)*(b.y2-b.y1);if(a<ba){ba=a;best=p}}}
+  return best;
+}
+/* click to select; drag the symbol or straight text to move it (touch: tap to select first, then drag) */
+$('art').addEventListener('pointerdown',e=>{
+  if(e.button>0)return;
+  const ae=document.activeElement;if(ae&&ae!==document.body&&ae.blur)ae.blur();
+  const p=pickAt(e.clientX,e.clientY,e.target),was=selEl;
+  if(!p){drag={id:e.pointerId,x:e.clientX,y:e.clientY,none:true};return}
+  if(p!==selEl)select(p);
+  const k=elKind(p);
+  if(k==='ring'||(e.pointerType==='touch'&&was!==p))return;
+  e.stopPropagation();e.preventDefault();
+  try{$('art').setPointerCapture(e.pointerId)}catch(err){}
+  const ids=k==='sym'?['sX','sY']:[p+'X',p+'Y'];
+  drag={id:e.pointerId,x:e.clientX,y:e.clientY,ids,v0:ids.map(i=>+$(i).value),moved:false};
+});
+$('art').addEventListener('pointermove',e=>{
+  if(!drag||drag.none||e.pointerId!==drag.id)return;
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  if(!drag.moved&&Math.hypot(dx,dy)<3)return;drag.moved=true;
+  const mmPx=(1000/U)/$('art').getBoundingClientRect().width,r=v=>Math.round(v*10)/10;
+  let mx=dx*mmPx,my=dy*mmPx;if(e.shiftKey){if(Math.abs(mx)>Math.abs(my))my=0;else mx=0}
+  [[0,mx],[1,my]].forEach(([i,d])=>{const id=drag.ids[i],el=$(id);el.value=r(drag.v0[i]+d);const n=$(id+'_n');if(n)n.value=+(+el.value).toFixed(2)});
+  sched();
+});
+const endDrag=e=>{if(!drag||e.pointerId!==drag.id)return;
+  if(drag.none&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<4)select(null);drag=null};
+$('art').addEventListener('pointerup',endDrag);$('art').addEventListener('pointercancel',()=>{drag=null});
+/* editing a card in the side panel selects its element */
+document.addEventListener('focusin',e=>{const c=e.target.closest&&e.target.closest('.pane .card');if(!c)return;
+  let p=null;if(c.querySelector('#sScale'))p='sym';else{const t=c.querySelector('textarea[id$="Txt"]');if(t)p=t.id.slice(0,-3)}
+  if(p&&p!==selEl&&elExists(p))select(p)});
+
 /* ---------- boot ---------- */
 refreshFonts();applyState(DEF);
-try{const s=JSON.parse(localStorage.getItem('cts_state')||'null');if(s){uploaded=s._img||null;const keep=norm(s);if(!FONT_DATA[keep.tFont])keep.tFont='Montserrat';if(!FONT_DATA[keep.bFont])keep.bFont='Montserrat';applyState(keep)}}catch(e){}
+try{const s=JSON.parse(localStorage.getItem('cts_state')||'null');if(s){uploaded=s._img||null;const keep=norm(s);Object.keys(keep).forEach(k=>{if(/Font$/.test(k)&&!FONT_DATA[keep[k]])keep[k]='Montserrat'});applyState(keep)}}catch(e){}
 upd();
 })();
 </script>
