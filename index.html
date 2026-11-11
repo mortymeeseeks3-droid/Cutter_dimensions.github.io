@@ -450,10 +450,10 @@ function codeGeom(v,p){
   let r;try{r=encCached(type,txt,ecc)}catch(e){return{err:e.message,parts:[]}}
   const ax=500+(+v[p+'X']||0)*U,ay=500+(+v[p+'Y']||0)*U,deg=+v[p+'Rot']||0,a=deg*Math.PI/180,co=Math.cos(a),si=Math.sin(a);
   const T=(x,y)=>[ax+x*co-y*si,ay+x*si+y*co],rc=(x,y,w,hh)=>[['M',...T(x,y)],['L',...T(x+w,y)],['L',...T(x+w,y+hh)],['L',...T(x,y+hh)],['Z']];
-  const parts=[],dark=[],tx=[],col=v[p+'Col'],bg=v[p+'Bg'];let info='',warn=false;
+  const parts=[],dark=[],tx=[],col=v[p+'Col'],bg=v[p+'Bg'];let info='',warn=false,zone=null;
   if(type==='qr'){
     const N=r.size,S=(+v[p+'Size']||25)*U,m=S/N,x0=-S/2;
-    if(v[p+'BgOn']){const q=4*m;parts.push({cmds:rc(x0-q,x0-q,S+2*q,S+2*q),fill:bg})}
+    const q=4*m;zone=[T(x0-q,x0-q),T(x0+S+q,x0-q),T(x0+S+q,x0+S+q),T(x0-q,x0+S+q)];if(v[p+'BgOn'])parts.push({cmds:rc(x0-q,x0-q,S+2*q,S+2*q),fill:bg,isBg:true});
     const L=logo?S*(+v[p+'LSize']||22)/100:0,box=L/2+m*.25,knock=logo&&v[p+'LPlate'];
     const cleared=(x,y)=>knock&&x0+(x+1)*m>-box&&x0+x*m<box&&x0+(y+1)*m>-box&&x0+y*m<box;
     for(let y=0;y<N;y++)for(let x=0;x<N;){if(r.modules[y][x]&&!cleared(x,y)){const s=x;while(x<N&&r.modules[y][x]&&!cleared(x,y))x++;dark.push(...rc(x0+s*m,x0+y*m,(x-s)*m,m))}else x++}
@@ -466,7 +466,7 @@ function codeGeom(v,p){
     let f=null,sc=0,c=0,gap=0;if(hrt){f=getFont(v[p+'Font'],400);sc=(+v[p+'FSize']||8)*PT/f.unitsPerEm;c=capH(f,sc);gap=c*.4}
     const barB=y0+Ht-(hrt?c+gap:0),guardB=r.ean&&hrt?barB+(c+gap)*.55:barB;
     if(barB-y0<mw*4)return{err:'Height is too small for the text — increase height or reduce text size',parts:[]};
-    if(v[p+'BgOn']){const q=r.quiet*mw,pd=Math.max(mw*2,U*.5);parts.push({cmds:rc(x0-q,y0-pd,W+2*q,Ht+2*pd),fill:bg})}
+    const q=r.quiet*mw,pd=Math.max(mw*2,U*.5);zone=[T(x0-q,y0-pd),T(x0+W+q,y0-pd),T(x0+W+q,y0+Ht+pd),T(x0-q,y0+Ht+pd)];if(v[p+'BgOn'])parts.push({cmds:rc(x0-q,y0-pd,W+2*q,Ht+2*pd),fill:bg,isBg:true});
     r.bars.forEach(([x,w,g])=>dark.push(...rc(x0+x*mw,y0,w*mw,(g?guardB:barB)-y0)));
     if(hrt)r.text.forEach(seg=>{
       const ssc=sc*(seg.small?.75:1),put=(g,gx)=>tx.push(...mapPath(g.getPath(0,0,f.unitsPerEm).commands,(X,Y)=>T(gx+X*ssc,y0+Ht+Y*ssc)));
@@ -479,7 +479,7 @@ function codeGeom(v,p){
     parts.push({cmds:dark,fill:col});if(tx.length)parts.push({cmds:tx,fill:col});
   }
   parts.forEach(q=>q.el=p);
-  return{parts,info,warn};
+  return{parts,info,warn,zone};
 }
 /* ---------- geometry ---------- */
 const rect=(x,y,w,h)=>[['M',x,y],['L',x+w,y],['L',x+w,y+h],['L',x,y+h],['Z']];
@@ -570,12 +570,25 @@ function textLine(v,p){
   });
   return{cmds,miss};
 }
+/* warn when other artwork sits inside a code's quiet zone (it is drawn, but can stop the code scanning) */
+function codeOverlaps(S,codes){
+  const inside=(z,x,y)=>{let sg=0;for(let i=0;i<4;i++){const [ax,ay]=z[i],[bx,by]=z[(i+1)%4],c=(bx-ax)*(y-ay)-(by-ay)*(x-ax);if(c===0)continue;const d=c>0?1:-1;if(sg&&d!==sg)return false;sg=d}return true};
+  for(const [p,r] of Object.entries(codes)){
+    if(r.err||!r.zone)continue;const hits=new Set();
+    for(const q of S){
+      if(!q.el||q.el===p||q.isBg||hits.has(q.el))continue;
+      const pts=q.img?[[q.x,q.y],[q.x+q.w,q.y],[q.x,q.y+q.h],[q.x+q.w,q.y+q.h]]:(q.cmds||[]).flatMap(c=>{const o=[];for(let i=1;i+1<c.length;i+=2)o.push([c[i],c[i+1]]);return o});
+      if(pts.some(([x,y])=>inside(r.zone,x,y)))hits.add(q.el);
+    }
+    if(hits.size){r.info+=` — overlaps the quiet zone: ${[...hits].map(elName).join(', ')}. Keep artwork clear of it so the code scans reliably`;r.warn=true}
+  }
+}
 function scene(b=0){
   const v=readState(),S=[],info={},lines={},codes={};
-  const codeLayer=layer=>{for(const p of allC()){if(v[p+'On']===false||(v[p+'Layer']||'top')!==layer)continue;const r=codeGeom(v,p);codes[p]=r;S.push(...r.parts)}};
+  const codeLayer=layer=>{for(const p of allC()){if(v[p+'On']===false||(v[p+'Layer']||'top')!==layer)continue;const r=codeGeom(v,p);codes[p]=r;r.parts.forEach(q=>(q.isBg?codeBgs:S).push(q))}};const codeBgs=[];
   // The artwork boundary is a fill/clip shape, not an uncontrolled border ring.
   // Only user-created border rings below should draw visible outlines.
-  const outer=shapePath(v,-b/U);if(!v.transp)S.push({cmds:outer,fill:v.cBg});
+  const outer=shapePath(v,-b/U);if(!v.transp)S.push({cmds:outer,fill:v.cBg});const bgAt=S.length;
   for(const n of allB())if(v['r'+n+'On'])S.push({cmds:shapePath(v,Math.min(shapeDims(v).w,shapeDims(v).h)*(100-v['r'+n+'Dia'])/200),stroke:v['r'+n+'Col'],sw:v['r'+n+'W']*U});
   codeLayer('under');
   {const k=S.length;symbol(v,S);for(let i=k;i<S.length;i++)S[i].el='sym'}
@@ -589,6 +602,8 @@ function scene(b=0){
     const r=textLine(v,p);lines[p]=r;S.push({cmds:r.cmds,fill:v[p+'Col'],el:p});
   }
   codeLayer('top');
+  S.splice(bgAt,0,...codeBgs);
+  codeOverlaps(S,codes);
   if(v.cutOn)S.push({cmds:shapePath(v,Math.min(shapeDims(v).w,shapeDims(v).h)*(100-v.cutDia)/200),stroke:'#ff00ff',sw:2.5,spot:v.cutName||'CUT'});
   return{S,info,v,lines,codes};
 }
