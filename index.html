@@ -130,10 +130,11 @@ main{height:calc(100dvh - 50px);grid-template-columns:clamp(350px,28vw,450px) mi
 @media(max-width:820px) and (max-height:520px){aside{height:62dvh}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 #art [data-el]{cursor:pointer}#art #selG{pointer-events:none}
+.qrOnly,.barOnly{}.code-logo{display:flex;gap:8px;align-items:center}.code-logo input{flex:1;min-width:0}
 .card.selc{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
 .selbar{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:5px;background:rgba(14,17,22,.94);border:1px solid var(--line);border-radius:999px;padding:5px 6px 5px 14px;font-size:12px;color:var(--txt);z-index:5;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.45)}
 .selbar.on{display:flex}.selbar b{color:var(--blue);font-weight:600;margin-right:4px}.selbar .k{color:var(--mut);margin-right:4px}.selbar button{padding:4px 9px;min-width:32px}
-@media(max-width:820px){.selbar{top:56px;max-width:calc(100% - 16px);overflow-x:auto}.selbar .k{display:none}.selbar button{min-height:36px}}
+@media(max-width:820px){.tabs button{white-space:nowrap;letter-spacing:.2px;font-size:11px}.selbar{top:56px;max-width:calc(100% - 16px);overflow-x:auto}.selbar .k{display:none}.selbar button{min-height:36px}}
 </style>
 </head>
 <body>
@@ -147,10 +148,11 @@ main{height:calc(100dvh - 50px);grid-template-columns:clamp(350px,28vw,450px) mi
 </header>
 <main>
 <aside>
-  <nav class="tabs"><button class="on" data-t="p1">Text rings</button><button data-t="p2">Design</button><button data-t="p3">Presets</button></nav>
+  <nav class="tabs"><button class="on" data-t="p1">Text rings</button><button data-t="p2">Design</button><button data-t="p4">Codes</button><button data-t="p3">Presets</button></nav>
   <div class="body">
     <div class="pane on" id="p1"></div>
     <div class="pane" id="p2"></div>
+    <div class="pane" id="p4"></div>
     <div class="pane" id="p3"></div>
   </div>
 </aside>
@@ -220,6 +222,19 @@ ${sl(p+'Size','Size',4,72,.5,'pt')}${sl(p+'Sp','Letter spacing',-1,10,.05,'mm')}
 <div class="g2"><div class="field"><label>Colour</label><input type="color" id="${p}Col"></div><div class="field"><label>Alignment</label><select id="${p}Align"><option value="start">Left</option><option value="mid">Centre</option><option value="end">Right</option></select></div></div>
 ${sl(p+'X','Position X',-50,50,.01,'mm')}${sl(p+'Y','Position Y',-50,50,.01,'mm')}${sl(p+'Rot','Rotation',-180,180,.5,'°')}
 <div class="g2" style="margin-top:4px"><button class="sm" data-rot="${p}:-90">Rotate −90°</button><button class="sm" data-rot="${p}:90">Rotate +90°</button></div><button class="sm" data-ctr="${p}" style="width:100%;margin-top:8px">Centre on artwork</button></div></div>`;
+const codeCard=p=>`<div class="card"><div class="ct"><span id="${p}Title">Code ${p.slice(1)}</span><span style="display:flex;gap:8px;align-items:center"><label class="chk"><input type="checkbox" id="${p}On"> Visible</label><button class="sm" data-rm="${p}">Remove</button></span></div><div id="${p}Body">
+<div class="g2"><div class="field"><label>Type</label><select id="${p}Type"><option value="qr">QR code</option><option value="c128">Code 128</option><option value="ean13">EAN-13</option><option value="upca">UPC-A</option></select></div><div class="field"><label>Layer</label><select id="${p}Layer"><option value="top">On top</option><option value="under">Behind text</option></select></div></div>
+<div class="field"><label>Data</label><textarea id="${p}Txt" spellcheck="false" style="min-height:52px"></textarea></div>
+<div class="muted" id="${p}Msg" style="margin:-4px 0 10px"></div>
+${sl(p+'Size','Size',5,100,.1,'mm')}<div class="barOnly">${sl(p+'H','Height',3,60,.1,'mm')}</div>
+<div class="qrOnly"><div class="field"><label>Error correction</label><select id="${p}Ecc"><option value="L">L · 7% recovery</option><option value="M">M · 15% recovery</option><option value="Q">Q · 25% recovery</option><option value="H">H · 30% recovery</option></select></div>
+<div class="field"><label>Centre logo (PNG / JPG / SVG)</label><div class="code-logo"><input type="file" id="${p}Logo" accept="image/png,image/jpeg,image/svg+xml"><button class="sm" data-lclr="${p}">Remove</button></div><div class="muted" id="${p}LInfo"></div></div>
+${sl(p+'LSize','Logo size',10,30,1,'%')}<label class="chk"><input type="checkbox" id="${p}LPlate"> Clear modules behind logo</label></div>
+<div class="barOnly"><label class="chk"><input type="checkbox" id="${p}HRT"> Show human-readable text</label><div class="g2" style="margin-top:8px"><div class="field"><label>Text font</label><select id="${p}Font" class="fs"></select></div><div class="field"><label>&nbsp;</label></div></div>${sl(p+'FSize','Text size',4,24,.5,'pt')}</div>
+<div class="g2" style="margin-top:8px"><div class="field"><label>Colour</label><input type="color" id="${p}Col"></div><div class="field"><label>Background</label><input type="color" id="${p}Bg"></div></div>
+<label class="chk"><input type="checkbox" id="${p}BgOn"> Background &amp; quiet zone</label>
+${sl(p+'X','Position X',-50,50,.01,'mm')}${sl(p+'Y','Position Y',-50,50,.01,'mm')}${sl(p+'Rot','Rotation',-180,180,.5,'°')}
+<div class="g2" style="margin-top:4px"><button class="sm" data-rot="${p}:-90">Rotate −90°</button><button class="sm" data-rot="${p}:90">Rotate +90°</button></div><button class="sm" data-ctr="${p}" style="width:100%;margin-top:8px">Centre on artwork</button></div></div>`;
 const borderCard=(n,rm)=>`<div class="card"><div class="ct"><span>Border ring ${n}</span><span style="display:flex;gap:8px;align-items:center"><label class="chk"><input type="checkbox" id="r${n}On"> On</label>${rm?`<button class="sm" data-rm="r${n}">Remove</button>`:''}</span></div>${sl('r'+n+'Dia','Diameter',20,100,.5,'mm')}${sl('r'+n+'W','Line width',.1,10,.05,'mm')}<div class="field"><label>Colour</label><input type="color" id="r${n}Col"></div></div>`;
 $('p1').innerHTML=`<div class="card"><div class="ct">Your fonts</div><div class="g2"><button class="sm" id="bFolder">Load font folder…</button><button class="sm" id="bFont">Load font file(s)…</button></div><div class="muted" id="fontInfo">TTF, OTF and WOFF are supported (not WOFF2). Fonts are used for the preview and embedded as outlines in exports.</div></div>`+ringCard('t','Top ring text')+ringCard('b','Bottom ring text',true)+'<div id="txtRings"></div><button class="sm" id="addTx" style="width:100%;margin-bottom:12px">+ Add text ring</button><div id="txtLines"></div><button class="sm" id="addLn" style="width:100%">+ Add straight text</button><div class="muted" style="margin:6px 2px 12px">Straight text can be placed anywhere and rotated. Click any element on the artwork to select it, then nudge with the arrow keys (Shift = 1 mm) and rotate text with [ and ]. Esc deselects.</div>';
 $('p2').innerHTML=`<div class="card"><div class="ct">Artwork shape</div><div class="field"><label>Shape</label><select id="shapeType"><option value="circle">Circle</option><option value="square">Square</option><option value="rectangle">Rectangle</option><option value="oval">Oval</option></select></div>${sl('shapeW','Width',20,100,.5,'mm')}<div id="shapeHField">${sl('shapeH','Height',20,100,.5,'mm')}</div><div class="muted">The shape is centred on the 100 × 100 mm artboard. Text and border rings follow its outline.</div></div><div class="card"><div class="ct"><span>Colour palette</span><button class="sm" id="bAse">Load .ase…</button></div><div class="muted" id="palInfo" style="margin:0">No palette loaded. Once loaded, swatches appear at the bottom of the preview — pick a target there, then click a swatch.</div><div class="row"><button class="sm" id="palClear" style="display:none">Remove palette</button></div></div><div class="card"><div class="ct">Centre symbol</div>
@@ -231,6 +246,7 @@ ${sl('sScale','Symbol scale',.2,10,.05,'×')}${sl('sX','Position X',-50,50,.01,'
 <div id="borderRings"></div><button class="sm" id="addBr" style="width:100%;margin-bottom:12px">+ Add border ring</button>
 <div class="card"><div class="ct"><span>Cut line (spot colour)</span><label class="chk"><input type="checkbox" id="cutOn"> On</label></div>${sl('cutDia','Cut diameter',20,100,.5,'mm')}<div class="field"><label>Spot colour name</label><input id="cutName"></div></div>
 <div class="card"><label class="chk"><input type="checkbox" id="gOn"> Show ring guides (preview only)</label></div>`;
+$('p4').innerHTML=`<div class="muted" style="margin:0 2px 12px">Each QR code or barcode is its own layer, drawn as vector shapes. Click it on the artwork to select it, then nudge with the arrow keys (Shift = 1 mm), drag it, or rotate with [ and ].</div><div id="codeCards"></div><div class="g2"><button class="sm" id="addQr">+ QR code</button><button class="sm" id="addBar">+ Barcode</button></div>`;
 const ic=(x)=>`<svg viewBox="0 0 24 24">${x}</svg>`;
 $('p3').innerHTML=`<div class="presets">
 <div class="pc" data-p="badge">${ic('<circle cx="12" cy="12" r="9"/><polygon points="12 6 13.5 10 18 10 14.5 12.5 16 17 12 14 8 17 9.5 12.5 6 10 10.5 10"/>')}Classic badge</div>
@@ -242,10 +258,10 @@ $('p3').innerHTML=`<div class="presets">
 
 /* ---------- state ---------- */
 const IDS_BASE=['shapeType','shapeW','shapeH','sym','mono','sScale','sX','sY','cAcc','sCol','cBg','transp','cutOn','cutDia','cutName','gOn','pdfPage','pdfBleed','pdfMarks','pdfColor','pdfSpots','pdfTitle','pdfBar','pdfInfo'];
-let IDS=[];const txx=[],brx=[],lnx=[];const allL=()=>[...lnx],LS=['On','Txt','Font','Wt','Size','Sp','Lead','Col','Align','X','Y','Rot'];
+let IDS=[];const txx=[],brx=[],lnx=[],cdx=[];let codeImgs={};const allC=()=>[...cdx],CS=['On','Type','Layer','Txt','Size','H','Ecc','LSize','LPlate','HRT','Font','FSize','Col','Bg','BgOn','X','Y','Rot'];const allL=()=>[...lnx],LS=['On','Txt','Font','Wt','Size','Sp','Lead','Col','Align','X','Y','Rot'];
 const allT=()=>['t','b',...txx],allB=()=>[1,2,...brx];
 const RS=['Txt','Font','Wt','Size','Sp','Col','Align','Dia','Rot','Off','Flip','Span','Pos','On'],BS=['On','Dia','W','Col'];
-const DEF={shapeType:'circle',shapeW:100,shapeH:100,tPos:'top',bPos:'bottom',_tx:[],_br:[],_ln:[],sX:0,sY:0,tTxt:'CIRCULAR TYPOGRAPHY STUDIO',tFont:'Montserrat',tWt:'700',tSize:14,tSp:1,tCol:'#111215',tAlign:'mid',tDia:80,tRot:0,tOff:0,tFlip:false,tSpan:200,
+const DEF={shapeType:'circle',shapeW:100,shapeH:100,tPos:'top',bPos:'bottom',_tx:[],_br:[],_ln:[],_cd:[],sX:0,sY:0,tTxt:'CIRCULAR TYPOGRAPHY STUDIO',tFont:'Montserrat',tWt:'700',tSize:14,tSp:1,tCol:'#111215',tAlign:'mid',tDia:80,tRot:0,tOff:0,tFlip:false,tSpan:200,
  bOn:true,bTxt:'ESTABLISHED 2026 • VECTOR ART',bFont:'Montserrat',bWt:'700',bSize:11,bSp:1,bCol:'#ff3ca6',bAlign:'mid',bDia:80,bRot:0,bOff:0,bFlip:false,bSpan:160,
  sym:'star',mono:'C',sScale:1,cAcc:'#ff3ca6',sCol:'#ff3ca6',r1Col:'#ff3ca6',r2Col:'#ff3ca6',cBg:'#ffffff',transp:false,r1On:false,r1Dia:94,r1W:.5,r2On:false,r2Dia:66,r2W:.3,cutOn:false,cutDia:96,cutName:'CUT',gOn:true,
  pdfPage:'art',pdfBleed:3,pdfMarks:true,pdfColor:'RGB',pdfSpots:'all',pdfTitle:'CIRCLE TYPE ARTWORK',pdfBar:'#1f6feb',pdfInfo:true};
@@ -257,13 +273,13 @@ const PRE={
  minimal:{tTxt:'CIRCULAR VECTOR TYPOGRAPHY',bOn:false,tFont:'Inter',tWt:'400',sym:'none',tCol:'#000000',tSp:1.5,gOn:false},
  coaster:{tTxt:'THE CORNER CAFE',bTxt:'FRESH ROAST • DAILY',tFont:'Roboto Condensed',bFont:'Roboto Condensed',tSize:18,bSize:12,sym:'monogram',mono:'C',sCol:'#2b2118',tCol:'#2b2118',bCol:'#8a5a2b',cAcc:'#8a5a2b',tDia:70,bDia:70,r1On:true,r1Dia:88,r1W:.8,cutOn:true,cutDia:96,gOn:false},
  seal:{tTxt:'NOTARY PUBLIC • STATE OF EXAMPLE',bTxt:'COMMISSION NO. 000000',tFont:'Playfair Display',bFont:'Playfair Display',sym:'star',tCol:'#14213d',bCol:'#14213d',cAcc:'#14213d',tSize:12,bSize:9,tDia:78,bDia:78,r1On:true,r1Dia:94,r1W:.7,r2On:true,r2Dia:60,r2W:.35,gOn:false}};
-function readState(){const v={};IDS.forEach(id=>{const e=$(id);v[id]=e.type==='checkbox'?e.checked:(e.type==='range'||e.type==='number')?+e.value:e.value});v._tx=[...txx];v._br=[...brx];v._ln=[...lnx];return v}
-function applyState(s){ensureRings(s._tx??txx,s._br??brx);ensureLines(s._ln??lnx);IDS.forEach(id=>{if(!(id in s))return;const e=$(id);if(e.type==='checkbox')e.checked=!!s[id];else e.value=s[id]});syncNums()}
+function readState(){const v={};IDS.forEach(id=>{const e=$(id);v[id]=e.type==='checkbox'?e.checked:(e.type==='range'||e.type==='number')?+e.value:e.value});v._tx=[...txx];v._br=[...brx];v._ln=[...lnx];v._cd=[...cdx];return v}
+function applyState(s){ensureRings(s._tx??txx,s._br??brx);ensureLines(s._ln??lnx);ensureCodes(s._cd??cdx);IDS.forEach(id=>{if(!(id in s))return;const e=$(id);if(e.type==='checkbox')e.checked=!!s[id];else e.value=s[id]});syncNums()}
 function syncNums(){document.querySelectorAll('input[type=range]').forEach(r=>{const n=$(r.id+'_n');if(n)n.value=+(+r.value).toFixed(2)})}
 function refreshFonts(){const bi=Object.keys(FONT_DATA),cu=Object.keys(custom).sort((x,y)=>x.localeCompare(y));document.querySelectorAll('.fs').forEach(s=>{const cur=s.value;s.innerHTML='';[['Built-in',bi],['Your fonts ('+cu.length+')',cu]].forEach(([l,ns])=>{if(!ns.length)return;const g=document.createElement('optgroup');g.label=l;ns.forEach(n=>{const o=document.createElement('option');o.textContent=o.value=n;g.appendChild(o)});s.appendChild(g)});s.value=[...bi,...cu].includes(cur)?cur:'Montserrat'})}
 
 /* ---------- dynamic rings ---------- */
-function rebuildIds(){IDS=[...IDS_BASE,...allT().flatMap(p=>RS.map(s=>p+s)),...allB().flatMap(n=>BS.map(s=>'r'+n+s)),...allL().flatMap(p=>LS.map(s=>p+s))].filter(id=>$(id))}
+function rebuildIds(){IDS=[...IDS_BASE,...allT().flatMap(p=>RS.map(s=>p+s)),...allB().flatMap(n=>BS.map(s=>'r'+n+s)),...allL().flatMap(p=>LS.map(s=>p+s)),...allC().flatMap(p=>CS.map(s=>p+s))].filter(id=>$(id))}
 const lbl=p=>p==='t'?'Top ring':p==='b'?'Bottom ring':'Text ring '+p.slice(1);
 function setVals(o){Object.entries(o).forEach(([k,val])=>{const e=$(k);if(!e)return;if(e.type==='checkbox')e.checked=!!val;else e.value=val});syncNums()}
 function mountText(p){
@@ -291,15 +307,180 @@ function mountLine(p){
 }
 function removeLine(p){const i=lnx.indexOf(p);if(i>=0)lnx.splice(i,1);const e=$(p+'Txt');if(e)e.closest('.card').remove();rebuildIds()}
 function ensureLines(ll){[...lnx].filter(p=>!ll.includes(p)).forEach(removeLine);ll.filter(p=>!lnx.includes(p)).forEach(p=>{lnx.push(p);mountLine(p)});rebuildIds()}
+function mountCode(p,type='qr'){
+  $('codeCards').insertAdjacentHTML('beforeend',codeCard(p));refreshFonts();
+  $('codeCards').lastElementChild.querySelectorAll('input[type=color]').forEach(wireColor);
+  const qr=type==='qr',d={On:true,Type:type,Layer:'top',Txt:qr?'https://example.com':'ABC-12345',Size:qr?25:35,H:15,Ecc:'M',LSize:22,LPlate:true,HRT:true,Font:'Montserrat',FSize:8,Col:'#000000',Bg:'#ffffff',BgOn:true,X:0,Y:qr?0:22,Rot:0},o={};
+  for(const k in d)o[p+k]=d[k];setVals(o);
+}
+function removeCode(p){const i=cdx.indexOf(p);if(i>=0)cdx.splice(i,1);delete codeImgs[p];const e=$(p+'Txt');if(e)e.closest('.card').remove();rebuildIds()}
+function ensureCodes(cl){[...cdx].filter(p=>!cl.includes(p)).forEach(removeCode);cl.filter(p=>!cdx.includes(p)).forEach(p=>{cdx.push(p);mountCode(p)});rebuildIds()}
 [1,2].forEach(n=>mountBorder(n,false));rebuildIds();
 $('addTx').onclick=()=>{const p='x'+(Math.max(0,...txx.map(q=>+q.slice(1)))+1);txx.push(p);mountText(p);rebuildIds();sched()};
 $('addLn').onclick=()=>{const p='l'+(Math.max(0,...lnx.map(q=>+q.slice(1)))+1);lnx.push(p);mountLine(p);rebuildIds();upd();select(p)};
+const addCode=type=>{const p='c'+(Math.max(0,...cdx.map(q=>+q.slice(1)))+1);cdx.push(p);mountCode(p,type);rebuildIds();upd();select(p)};
+$('addQr').onclick=()=>addCode('qr');$('addBar').onclick=()=>addCode('c128');
+document.addEventListener('change',e=>{const t=e.target;if(!t.id||!/^c\d+Logo$/.test(t.id))return;const p=t.id.slice(0,-4),f=t.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{codeImgs[p]={url:r.result,w:im.naturalWidth||100,h:im.naturalHeight||100,name:f.name};sched()};im.onerror=()=>toast('Could not read that image');im.src=r.result};r.readAsDataURL(f);t.value=''});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-lclr]');if(!b)return;delete codeImgs[b.dataset.lclr];sched()});
 $('sCtr').onclick=()=>{setVals({sX:0,sY:0});sched()};
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-rot],[data-ctr]');if(!t)return;
   if(t.dataset.ctr){const p=t.dataset.ctr;setVals({[p+'X']:0,[p+'Y']:0})}else{const [p,d]=t.dataset.rot.split(':');bump(p+'Rot',+d)}sched()});
 $('addBr').onclick=()=>{const n=Math.max(2,...brx)+1;brx.push(n);mountBorder(n,true);rebuildIds();sched()};
-document.addEventListener('click',e=>{const r=e.target.dataset&&e.target.dataset.rm;if(!r)return;if(r[0]==='x')removeText(r);else if(r[0]==='l')removeLine(r);else removeBorder(+r.slice(1));sched()});
+document.addEventListener('click',e=>{const r=e.target.dataset&&e.target.dataset.rm;if(!r)return;if(r[0]==='x')removeText(r);else if(r[0]==='l')removeLine(r);else if(r[0]==='c')removeCode(r);else removeBorder(+r.slice(1));sched()});
 
+/* ---------- QR code + linear barcode encoders (self-contained) ---------- */
+const CODES=(()=>{
+  /* ===== QR (ISO/IEC 18004, byte mode, UTF-8) ===== */
+  const ECC_CW=[
+    [-1,7,10,15,20,26,18,20,24,30,18,20,24,26,30,22,24,28,30,28,28,28,28,30,30,26,28,30,30,30,30,30,30,30,30,30,30,30,30,30,30],
+    [-1,10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26,26,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28],
+    [-1,13,22,18,26,18,24,18,22,20,24,28,26,24,20,30,24,28,28,26,30,28,30,30,30,30,28,30,30,30,30,30,30,30,30,30,30,30,30,30,30],
+    [-1,17,28,22,16,22,28,26,26,24,28,24,28,22,24,24,30,28,28,26,28,30,24,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30]];
+  const NUM_BLOCKS=[
+    [-1,1,1,1,1,1,2,2,2,2,4,4,4,4,4,6,6,6,6,7,8,8,9,9,10,12,12,12,13,14,15,16,17,18,19,19,20,21,22,24,25],
+    [-1,1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16,17,17,18,20,21,23,25,26,28,29,31,33,35,37,38,40,43,45,47,49],
+    [-1,1,1,2,2,4,4,6,6,8,8,8,10,12,16,12,17,16,18,21,20,23,23,25,27,29,34,34,35,38,40,43,45,48,51,53,56,59,62,65,68],
+    [-1,1,1,2,4,4,4,5,6,8,8,11,11,16,16,18,16,19,21,25,25,25,34,30,32,35,37,40,42,45,48,51,54,57,60,63,66,70,74,77,81]];
+  const ECL={L:[0,1],M:[1,0],Q:[2,3],H:[3,2]};
+  const rawModules=v=>{let r=(16*v+128)*v+64;if(v>=2){const n=Math.floor(v/7)+2;r-=(25*n-10)*n-55;if(v>=7)r-=36}return r};
+  const dataCW=(v,e)=>Math.floor(rawModules(v)/8)-ECC_CW[e][v]*NUM_BLOCKS[e][v];
+  const gmul=(x,y)=>{let z=0;for(let i=7;i>=0;i--){z=(z<<1)^((z>>>7)*0x11D);z^=((y>>>i)&1)*x}return z&255};
+  function rsDiv(d){const r=new Array(d).fill(0);r[d-1]=1;let root=1;for(let i=0;i<d;i++){for(let j=0;j<d;j++){r[j]=gmul(r[j],root);if(j+1<d)r[j]^=r[j+1]}root=gmul(root,2)}return r}
+  function rsRem(data,div){const r=new Array(div.length).fill(0);for(const b of data){const f=b^r.shift();r.push(0);div.forEach((c,i)=>r[i]^=gmul(c,f))}return r}
+  const bit=(x,i)=>((x>>>i)&1)!==0;
+  function alignPos(v){if(v===1)return[];const n=Math.floor(v/7)+2,step=v===32?26:Math.ceil((v*4+4)/(n*2-2))*2,r=[6];for(let p=v*4+10;r.length<n;p-=step)r.splice(1,0,p);return r}
+  function qr(text,eclName='M',minVer=1){
+    const bytes=[...new TextEncoder().encode(text)];
+    let e=ECL[eclName]||ECL.M,ver=0;
+    for(let v=Math.max(1,minVer);v<=40;v++){const cc=v<10?8:16;if(4+cc+bytes.length*8<=dataCW(v,e[0])*8){ver=v;break}}
+    if(!ver)throw new Error('Too much data for a QR code at this error-correction level');
+    const cc=ver<10?8:16,bb=[];const push=(val,n)=>{for(let i=n-1;i>=0;i--)bb.push((val>>>i)&1)};
+    push(4,4);push(bytes.length,cc);bytes.forEach(b=>push(b,8));
+    const cap=dataCW(ver,e[0])*8;push(0,Math.min(4,cap-bb.length));push(0,(8-bb.length%8)%8);
+    for(let pad=0xEC;bb.length<cap;pad^=0xEC^0x11)push(pad,8);
+    const data=[];for(let i=0;i<bb.length;i+=8){let b=0;for(let j=0;j<8;j++)b=(b<<1)|bb[i+j];data.push(b)}
+    // ECC + interleave
+    const nb=NUM_BLOCKS[e[0]][ver],el=ECC_CW[e[0]][ver],raw=Math.floor(rawModules(ver)/8),nShort=nb-raw%nb,shortLen=Math.floor(raw/nb),div=rsDiv(el),blocks=[];
+    for(let i=0,k=0;i<nb;i++){const dat=data.slice(k,k+shortLen-el+(i<nShort?0:1));k+=dat.length;const ecc=rsRem(dat,div);if(i<nShort)dat.push(0);blocks.push(dat.concat(ecc))}
+    const cw=[];for(let i=0;i<blocks[0].length;i++)blocks.forEach((b,j)=>{if(i!==shortLen-el||j>=nShort)cw.push(b[i])});
+    // matrix
+    const N=ver*4+17,M=[...Array(N)].map(()=>new Array(N).fill(false)),F=[...Array(N)].map(()=>new Array(N).fill(false));
+    const set=(x,y,d)=>{M[y][x]=d;F[y][x]=true};
+    for(let i=0;i<N;i++){set(6,i,i%2===0);set(i,6,i%2===0)}
+    for(const [cx,cy] of [[3,3],[N-4,3],[3,N-4]])for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){const x=cx+dx,y=cy+dy,d=Math.max(Math.abs(dx),Math.abs(dy));if(x>=0&&x<N&&y>=0&&y<N)set(x,y,d!==2&&d!==4)}
+    const ap=alignPos(ver),na=ap.length;
+    for(let i=0;i<na;i++)for(let j=0;j<na;j++){if((i===0&&j===0)||(i===0&&j===na-1)||(i===na-1&&j===0))continue;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)set(ap[i]+dx,ap[j]+dy,Math.max(Math.abs(dx),Math.abs(dy))!==1)}
+    const fmt=mask=>{const d=e[1]<<3|mask;let r=d;for(let i=0;i<10;i++)r=(r<<1)^((r>>>9)*0x537);const b=(d<<10|r)^0x5412;
+      for(let i=0;i<=5;i++)set(8,i,bit(b,i));set(8,7,bit(b,6));set(8,8,bit(b,7));set(7,8,bit(b,8));for(let i=9;i<15;i++)set(14-i,8,bit(b,i));
+      for(let i=0;i<8;i++)set(N-1-i,8,bit(b,i));for(let i=8;i<15;i++)set(8,N-15+i,bit(b,i));set(8,N-8,true)};
+    fmt(0);
+    if(ver>=7){let r=ver;for(let i=0;i<12;i++)r=(r<<1)^((r>>>11)*0x1F25);const b=ver<<12|r;for(let i=0;i<18;i++){const a=N-11+i%3,c=Math.floor(i/3);set(a,c,bit(b,i));set(c,a,bit(b,i))}}
+    let bi=0;for(let right=N-1;right>=1;right-=2){if(right===6)right=5;for(let vert=0;vert<N;vert++)for(let j=0;j<2;j++){const x=right-j,up=((right+1)&2)===0,y=up?N-1-vert:vert;if(!F[y][x]&&bi<cw.length*8){M[y][x]=bit(cw[bi>>>3],7-(bi&7));bi++}}}
+    const MASKS=[(x,y)=>(x+y)%2===0,(x,y)=>y%2===0,(x,y)=>x%3===0,(x,y)=>(x+y)%3===0,(x,y)=>(Math.floor(x/3)+Math.floor(y/2))%2===0,(x,y)=>x*y%2+x*y%3===0,(x,y)=>(x*y%2+x*y%3)%2===0,(x,y)=>((x+y)%2+x*y%3)%2===0];
+    const applyMask=m=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(!F[y][x]&&MASKS[m](x,y))M[y][x]=!M[y][x]};
+    const penalty=()=>{let p=0,dark=0;
+      const line=get=>{let run=1,s='';for(let i=0;i<N;i++){const c=get(i);s+=c?'1':'0';if(i&&c===get(i-1)){run++;if(run===5)p+=3;else if(run>5)p++}else run=1}
+        s='0000'+s+'0000';for(let i=s.indexOf('1011101');i>=0;i=s.indexOf('1011101',i+1)){if(s.slice(i-4,i)==='0000'||s.slice(i+7,i+11)==='0000')p+=40}};
+      for(let y=0;y<N;y++)line(x=>M[y][x]);for(let x=0;x<N;x++)line(y=>M[y][x]);
+      for(let y=0;y<N-1;y++)for(let x=0;x<N-1;x++){const c=M[y][x];if(c===M[y][x+1]&&c===M[y+1][x]&&c===M[y+1][x+1])p+=3}
+      for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(M[y][x])dark++;
+      p+=10*Math.max(0,Math.ceil(Math.abs(dark*20-N*N*10)/(N*N))-1);return p};
+    let best=0,bp=1e18;for(let m=0;m<8;m++){applyMask(m);fmt(m);const p=penalty();if(p<bp){bp=p;best=m}applyMask(m)}
+    applyMask(best);fmt(best);
+    return{size:N,modules:M,version:ver,ecl:eclName,mask:best};
+  }
+
+  /* ===== linear barcodes -> {bars:[[startModule,width,isGuard]], modules, text layout} ===== */
+  const C128=['212222','222122','222221','121223','121322','131222','122213','122312','132212','221213','221312','231212','112232','122132','122231','113222','123122','123221','223211','221132','221231','213212','223112','312131','311222','321122','321221','312212','322112','322211','212123','212321','232121','111323','131123','131321','112313','132113','132311','211313','231113','231311','112133','112331','132131','113123','113321','133121','313121','211331','231131','213113','213311','213131','311123','311321','331121','312113','312311','332111','314111','221411','431111','111224','111422','121124','121421','141122','141221','112214','112412','122114','122411','142112','142211','241211','221114','413111','241112','134111','111242','121142','121241','114212','124112','124211','411212','421112','421211','212141','214121','412121','111143','111341','131141','114113','114311','411113','411311','113141','114131','311141','411131','211412','211214','211232','2331112'];
+  function code128(text){
+    const s=[...text];if(!s.length)throw new Error('Enter some data');
+    for(const ch of s){const c=ch.charCodeAt(0);if(c<32||c>126)throw new Error('Code 128 supports plain ASCII characters only')}
+    const isD=i=>i<s.length&&s[i]>='0'&&s[i]<='9',digitRun=i=>{let n=0;while(isD(i+n))n++;return n};
+    const vals=[];let set,i=0;
+    const r0=digitRun(0);
+    if(r0>=4&&(r0===s.length||r0>=4)){set='C';vals.push(105)}else{set='B';vals.push(104)}
+    while(i<s.length){
+      if(set==='C'){if(digitRun(i)>=2){vals.push(+(s[i]+s[i+1]));i+=2;continue}vals.push(100);set='B';continue}
+      const run=digitRun(i);
+      if(run>=6||(run>=4&&i+run===s.length)){if(run%2){vals.push(s[i].charCodeAt(0)-32);i++}vals.push(99);set='C';continue}
+      vals.push(s[i].charCodeAt(0)-32);i++;
+    }
+    let sum=vals[0];for(let k=1;k<vals.length;k++)sum+=vals[k]*k;vals.push(sum%103,106);
+    const bars=[];let x=0;
+    for(const v of vals){const p=C128[v];for(let k=0;k<p.length;k++){const w=+p[k];if(k%2===0)bars.push([x,w,false]);x+=w}}
+    return{bars,modules:x,quiet:10,text:[{t:text,from:0,to:x}]};
+  }
+  const EL=['0001101','0011001','0010011','0111101','0100011','0110001','0101111','0111011','0110111','0001011'];
+  const ER=EL.map(p=>[...p].map(c=>c==='1'?'0':'1').join('')),EG=ER.map(p=>[...p].reverse().join(''));
+  const PAR=['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG','LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL'];
+  const eanCheck=d=>{let s=0;for(let i=0;i<d.length;i++)s+=(+d[d.length-1-i])*(i%2===0?3:1);return (10-s%10)%10};
+  function ean13(text,upc){
+    let d=text.replace(/\s/g,'');const need=upc?11:12;
+    if(!/^\d+$/.test(d))throw new Error((upc?'UPC-A':'EAN-13')+' accepts digits only');
+    if(d.length===need)d+=eanCheck(d);
+    else if(d.length===need+1){if(eanCheck(d.slice(0,need))!==+d[need])throw new Error('Check digit should be '+eanCheck(d.slice(0,need)))}
+    else throw new Error((upc?'UPC-A':'EAN-13')+' needs '+need+' digits (or '+(need+1)+' with check digit)');
+    const full=upc?'0'+d:d,par=PAR[+full[0]];let pat='101';
+    for(let i=1;i<=6;i++)pat+=(par[i-1]==='L'?EL:EG)[+full[i]];pat+='01010';for(let i=7;i<=12;i++)pat+=ER[+full[i]];pat+='101';
+    const guard=new Set();[0,1,2,45,46,47,48,49,92,93,94].forEach(k=>guard.add(k));
+    if(upc){for(let k=3;k<10;k++)guard.add(k);for(let k=85;k<92;k++)guard.add(k)}
+    const bars=[];for(let k=0;k<pat.length;){if(pat[k]==='1'){let w=0;const g=guard.has(k);while(pat[k+w]==='1'&&guard.has(k+w)===g)w++;bars.push([k,w,g]);k+=w}else k++}
+    const text_=upc?[{t:d[0],from:-9,to:-2,small:true},{t:d.slice(1,6),from:10,to:45},{t:d.slice(6,11),from:50,to:85},{t:d[11],from:97,to:104,small:true}]
+                   :[{t:d[0],from:-9,to:-2},{t:d.slice(1,7),from:3,to:45},{t:d.slice(7),from:50,to:92}];
+    return{bars,modules:95,quiet:upc?9:11,text:text_,ean:true,value:d};
+  }
+  function encode(type,text,ecl){
+    if(type==='qr')return qr(text,ecl);
+    if(type==='c128')return code128(text);
+    if(type==='ean13')return ean13(text,false);
+    if(type==='upca')return ean13(text,true);
+    throw new Error('Unknown code type');
+  }
+  return{qr,code128,ean13,encode,eanCheck};
+})();
+
+const codeCache=new Map();
+function encCached(type,txt,ecc){const k=type+'|'+ecc+'|'+txt;if(codeCache.has(k)){const r=codeCache.get(k);if(r instanceof Error)throw r;return r}
+  let r;try{r=CODES.encode(type,txt,ecc)}catch(e){r=e}if(codeCache.size>60)codeCache.clear();codeCache.set(k,r);if(r instanceof Error)throw r;return r}
+/* one QR / barcode layer -> scene parts, built in local mm space then rotated about its centre (X/Y) */
+function codeGeom(v,p){
+  const type=v[p+'Type'],txt=String(v[p+'Txt']),logo=type==='qr'?codeImgs[p]:null,ecc=logo?'H':v[p+'Ecc'];
+  if(!txt.length)return{err:'Enter the data to encode',parts:[]};
+  let r;try{r=encCached(type,txt,ecc)}catch(e){return{err:e.message,parts:[]}}
+  const ax=500+(+v[p+'X']||0)*U,ay=500+(+v[p+'Y']||0)*U,deg=+v[p+'Rot']||0,a=deg*Math.PI/180,co=Math.cos(a),si=Math.sin(a);
+  const T=(x,y)=>[ax+x*co-y*si,ay+x*si+y*co],rc=(x,y,w,hh)=>[['M',...T(x,y)],['L',...T(x+w,y)],['L',...T(x+w,y+hh)],['L',...T(x,y+hh)],['Z']];
+  const parts=[],dark=[],tx=[],col=v[p+'Col'],bg=v[p+'Bg'];let info='',warn=false;
+  if(type==='qr'){
+    const N=r.size,S=(+v[p+'Size']||25)*U,m=S/N,x0=-S/2;
+    if(v[p+'BgOn']){const q=4*m;parts.push({cmds:rc(x0-q,x0-q,S+2*q,S+2*q),fill:bg})}
+    const L=logo?S*(+v[p+'LSize']||22)/100:0,box=L/2+m*.25,knock=logo&&v[p+'LPlate'];
+    const cleared=(x,y)=>knock&&x0+(x+1)*m>-box&&x0+x*m<box&&x0+(y+1)*m>-box&&x0+y*m<box;
+    for(let y=0;y<N;y++)for(let x=0;x<N;){if(r.modules[y][x]&&!cleared(x,y)){const s=x;while(x<N&&r.modules[y][x]&&!cleared(x,y))x++;dark.push(...rc(x0+s*m,x0+y*m,(x-s)*m,m))}else x++}
+    const mm=m/U;info=`QR version ${r.version} · ${N}×${N} modules · error correction ${ecc}${logo&&v[p+'Ecc']!=='H'?' (raised to H for the logo)':''} · module ${mm.toFixed(2)} mm`;
+    if(mm<.3){info+=' — very small modules, may not scan reliably in print';warn=true}
+    parts.push({cmds:dark,fill:col});
+    if(logo){const k=Math.min(L/logo.w,L/logo.h),w=logo.w*k,hh=logo.h*k;parts.push({img:logo.url,x:ax-w/2,y:ay-hh/2,w,h:hh,rot:deg,rcx:ax,rcy:ay})}
+  }else{
+    const W=(+v[p+'Size']||35)*U,Ht=(+v[p+'H']||15)*U,mw=W/r.modules,x0=-W/2,y0=-Ht/2,hrt=v[p+'HRT'];
+    let f=null,sc=0,c=0,gap=0;if(hrt){f=getFont(v[p+'Font'],400);sc=(+v[p+'FSize']||8)*PT/f.unitsPerEm;c=capH(f,sc);gap=c*.4}
+    const barB=y0+Ht-(hrt?c+gap:0),guardB=r.ean&&hrt?barB+(c+gap)*.55:barB;
+    if(barB-y0<mw*4)return{err:'Height is too small for the text — increase height or reduce text size',parts:[]};
+    if(v[p+'BgOn']){const q=r.quiet*mw,pd=Math.max(mw*2,U*.5);parts.push({cmds:rc(x0-q,y0-pd,W+2*q,Ht+2*pd),fill:bg})}
+    r.bars.forEach(([x,w,g])=>dark.push(...rc(x0+x*mw,y0,w*mw,(g?guardB:barB)-y0)));
+    if(hrt)r.text.forEach(seg=>{
+      const ssc=sc*(seg.small?.75:1),put=(g,gx)=>tx.push(...mapPath(g.getPath(0,0,f.unitsPerEm).commands,(X,Y)=>T(gx+X*ssc,y0+Ht+Y*ssc)));
+      if(r.ean){const ch=[...seg.t],cell=(seg.to-seg.from)*mw/ch.length;ch.forEach((c1,i)=>{const g=glyphs(f,c1).gl[0];if(g)put(g,x0+seg.from*mw+cell*(i+.5)-g.advanceWidth*ssc/2)})}
+      else{const gl=glyphs(f,seg.t).gl,adv=gl.map((g,i)=>g.advanceWidth*ssc+(gl[i+1]?f.getKerningValue(g,gl[i+1])*ssc:0)),tot=adv.reduce((s,w)=>s+w,0);let gx=x0+(seg.from+seg.to)/2*mw-tot/2;gl.forEach((g,i)=>{put(g,gx);gx+=adv[i]})}
+    });
+    const mm=mw/U;info=`${type==='c128'?'Code 128':type==='ean13'?'EAN-13 '+r.value:'UPC-A '+r.value} · ${r.modules} modules · bar module ${mm.toFixed(3)} mm`;
+    if(r.ean)info+=` (${Math.round(mm/.33*100)}% of nominal size)`;
+    if(mm<.25){info+=' — bars are very thin, may not scan reliably in print';warn=true}
+    parts.push({cmds:dark,fill:col});if(tx.length)parts.push({cmds:tx,fill:col});
+  }
+  parts.forEach(q=>q.el=p);
+  return{parts,info,warn};
+}
 /* ---------- geometry ---------- */
 const rect=(x,y,w,h)=>[['M',x,y],['L',x+w,y],['L',x+w,y+h],['L',x,y+h],['Z']];
 const circ=(cx,cy,r)=>{const k=.5522847498*r;return[['M',cx+r,cy],['C',cx+r,cy+k,cx+k,cy+r,cx,cy+r],['C',cx-k,cy+r,cx-r,cy+k,cx-r,cy],['C',cx-r,cy-k,cx-k,cy-r,cx,cy-r],['C',cx+k,cy-r,cx+r,cy-k,cx+r,cy],['Z']]};
@@ -390,11 +571,13 @@ function textLine(v,p){
   return{cmds,miss};
 }
 function scene(b=0){
-  const v=readState(),S=[],info={},lines={};
+  const v=readState(),S=[],info={},lines={},codes={};
+  const codeLayer=layer=>{for(const p of allC()){if(v[p+'On']===false||(v[p+'Layer']||'top')!==layer)continue;const r=codeGeom(v,p);codes[p]=r;S.push(...r.parts)}};
   // The artwork boundary is a fill/clip shape, not an uncontrolled border ring.
   // Only user-created border rings below should draw visible outlines.
   const outer=shapePath(v,-b/U);if(!v.transp)S.push({cmds:outer,fill:v.cBg});
   for(const n of allB())if(v['r'+n+'On'])S.push({cmds:shapePath(v,Math.min(shapeDims(v).w,shapeDims(v).h)*(100-v['r'+n+'Dia'])/200),stroke:v['r'+n+'Col'],sw:v['r'+n+'W']*U});
+  codeLayer('under');
   {const k=S.length;symbol(v,S);for(let i=k;i<S.length;i++)S[i].el='sym'}
   for(const p of allT()){
     if(v[p+'On']===false)continue;
@@ -405,15 +588,16 @@ function scene(b=0){
     if(v[p+'On']===false||!String(v[p+'Txt']).trim())continue;
     const r=textLine(v,p);lines[p]=r;S.push({cmds:r.cmds,fill:v[p+'Col'],el:p});
   }
+  codeLayer('top');
   if(v.cutOn)S.push({cmds:shapePath(v,Math.min(shapeDims(v).w,shapeDims(v).h)*(100-v.cutDia)/200),stroke:'#ff00ff',sw:2.5,spot:v.cutName||'CUT'});
-  return{S,info,v,lines};
+  return{S,info,v,lines,codes};
 }
 const D=c=>c.map(a=>a[0]+a.slice(1).map(n=>+n.toFixed(2)).join(' ')).join('');
-const svgInner=(S,pv)=>S.map(p=>p.img?`<image${pv&&p.el?` data-el="${p.el}"`:''} href="${p.img}" x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}"/>`:`<path${pv&&p.el?` data-el="${p.el}"`:''} d="${D(p.cmds)}" fill="${p.fill||'none'}"${p.stroke?` stroke="${p.stroke}" stroke-width="${p.sw}" stroke-linecap="round" stroke-linejoin="round"${p.spot?(pv?' stroke-dasharray="18 10"':' id="cut-line"'):''}`:''}/>`).join('');
+const svgInner=(S,pv)=>S.map(p=>p.img?`<image${pv&&p.el?` data-el="${p.el}"`:''} href="${p.img}" x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}"${p.rot?` transform="rotate(${p.rot} ${p.rcx} ${p.rcy})"`:''}/>`:`<path${pv&&p.el?` data-el="${p.el}"`:''} d="${D(p.cmds)}" fill="${p.fill||'none'}"${p.stroke?` stroke="${p.stroke}" stroke-width="${p.sw}" stroke-linecap="round" stroke-linejoin="round"${p.spot?(pv?' stroke-dasharray="18 10"':' id="cut-line"'):''}`:''}/>`).join('');
 
 /* ---------- render ---------- */
 function upd(){
-  const{S,info,v,lines}=scene();
+  const{S,info,v,lines,codes}=scene();
   let g='';
   if(v.gOn)g=`<g fill="none" stroke-width="1.5" stroke-dasharray="4 4" opacity=".7" pointer-events="none">${allT().filter(p=>v[p+'On']!==false).map(p=>`<path d="${D(shapePath(v,Math.min(shapeDims(v).w,shapeDims(v).h)*(100-v[p+'Dia'])/200))}" stroke="${v[p+'Pos']==='bottom'?'#ff3ca6':'#26d9e8'}"/>`).join('')}<path d="M500 40V960M40 500H960" stroke="#888" opacity=".5"/></g>`;
   $('art').innerHTML=svgInner(S,true)+g+'<g id="selG"></g>';
@@ -426,7 +610,14 @@ function upd(){
   [...allT(),...allL()].forEach(p=>{$(p+'Wt').disabled=!!custom[v[p+'Font']]});
   const ents=Object.entries(info),miss=[...ents.map(e=>e[1]),...Object.values(lines)].reduce((a,r)=>a+r.miss,0);
   $('pill').innerHTML=`${shapeDims(v).w} × ${shapeDims(v).h} mm ${v.shapeType}`+ents.map(([p,r])=>` · ${p==='t'?'top':p==='b'?'bottom':'ring '+p.slice(1)} ${Math.round(r.span)}°`).join('')+(miss?` · <b>${miss} character${miss>1?'s':''} missing from font</b>`:'');
-  try{localStorage.setItem('cts_state',JSON.stringify({...v,_img:uploaded}))}catch(e){}
+  allC().forEach(p=>{const qr=v[p+'Type']==='qr',card=$(p+'Txt').closest('.card'),r=codes[p],m=$(p+'Msg'),lg=codeImgs[p];
+    card.querySelectorAll('.qrOnly').forEach(e=>e.style.display=qr?'':'none');card.querySelectorAll('.barOnly').forEach(e=>e.style.display=qr?'none':'');
+    $(p+'Title').textContent=(qr?'QR code ':'Barcode ')+p.slice(1);
+    const sz=$(p+'Size').closest('.field').querySelector('label');if(sz&&sz.firstChild)sz.firstChild.nodeValue=qr?'Size':'Width';
+    $(p+'Ecc').disabled=!!lg;$(p+'LInfo').textContent=lg?'Logo: '+(lg.name||'loaded')+' — error correction locked to H':'';
+    const b=$(p+'Body');b.style.opacity=v[p+'On']?1:.4;
+    m.textContent=!v[p+'On']?'Hidden':r?(r.err||r.info):'';m.style.color=r&&r.err?'#ff6b6b':r&&r.warn?'#f5b84b':'';});
+  try{localStorage.setItem('cts_state',JSON.stringify({...v,_img:uploaded,_cimg:codeImgs}))}catch(e){}
   drawSel();
 }
 let raf=0;const sched=()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;try{upd()}catch(e){console.error(e);toast('Render error: '+e.message)}})};
@@ -452,7 +643,7 @@ document.addEventListener('change',e=>{
 });
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button,.pane').forEach(x=>x.classList.remove('on'));b.classList.add('on');$(b.dataset.t).classList.add('on')});
 document.querySelectorAll('.pc').forEach(c=>c.onclick=()=>{applyState(norm(PRE[c.dataset.p]));upd()});
-$('bReset').onclick=()=>{uploaded=null;applyState(DEF);upd()};
+$('bReset').onclick=()=>{uploaded=null;codeImgs={};applyState(DEF);upd()};
 const fit=p=>{
   const v=readState(),r=ring(v,p,10);if(!r.n)return;
   const target=v[p+'Span']*Math.PI/180*r.R,size=10*(target-r.spT)/r.base;
@@ -536,9 +727,9 @@ $('zi').onclick=()=>setZ(z*1.25);$('zo').onclick=()=>setZ(z/1.25);$('zf').onclic
 
 /* ---------- save / open ---------- */
 const dl=(blob,name)=>{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)};
-$('bSave').onclick=()=>dl(new Blob([JSON.stringify({...readState(),_img:uploaded},null,1)],{type:'application/json'}),'circle-type-project.json');
+$('bSave').onclick=()=>dl(new Blob([JSON.stringify({...readState(),_img:uploaded,_cimg:codeImgs},null,1)],{type:'application/json'}),'circle-type-project.json');
 $('bOpen').onclick=()=>$('fProj').click();
-$('fProj').onchange=async e=>{try{const s=JSON.parse(await e.target.files[0].text());uploaded=s._img||null;applyState(norm(s));upd()}catch(err){toast('Not a valid project file')}e.target.value=''};
+$('fProj').onchange=async e=>{try{const s=JSON.parse(await e.target.files[0].text());uploaded=s._img||null;codeImgs=s._cimg||{};applyState(norm(s));upd()}catch(err){toast('Not a valid project file')}e.target.value=''};
 $('bSvg').onclick=()=>{const{S}=scene();dl(new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="100mm" viewBox="0 0 1000 1000">${svgInner(S,false)}</svg>`],{type:'image/svg+xml'}),'circle-type.svg')};
 $('bPng').onclick=async()=>{
   try{const{S}=scene(),img=new Image();img.src=URL.createObjectURL(new Blob([`<svg xmlns="http://www.w3.org/2000/svg" width="3000" height="3000" viewBox="0 0 1000 1000">${svgInner(S,false)}</svg>`],{type:'image/svg+xml'}));await img.decode();
@@ -567,7 +758,7 @@ function spotInfo(){
   $('spotInfo').textContent=l.length?'Named spots in this PDF: '+l.join(', '):(pal?'No palette colours are used in the design, so no named spots will be written.':'Load an .ase palette and pick colours from it to write named spots.');
 }
 async function buildPDF(){
-  const o=readState(),sheet=o.pdfPage!=='art',bleed=sheet?0:Math.max(0,o.pdfBleed||0),{S,info,lines}=scene(bleed*U);
+  const o=readState(),sheet=o.pdfPage!=='art',bleed=sheet?0:Math.max(0,o.pdfBleed||0),{S,info,lines,codes}=scene(bleed*U);
   const A=100*MM,k=A/1000,cm=o.pdfColor==='CMYK';
   let W,H,ox,oy,pad=0;
   if(sheet){[W,H]=SZ[o.pdfPage].map(x=>x*MM);ox=(W-A)/2;oy=H-38*MM-A}
@@ -600,10 +791,12 @@ async function buildPDF(){
       txt('/F1',9,ox,y,'FONTS',dark);y-=5*MM;
       for(const p of Object.keys(info))line(`${lbl(p)}: ${o[p+'Font']} ${wn[o[p+'Wt']]||''}, ${o[p+'Size']} pt, ${o[p+'Dia']} mm dia.`);
        for(const p of Object.keys(lines))line(`Straight text ${p.slice(1)}: ${o[p+'Font']} ${wn[o[p+'Wt']]||''}, ${o[p+'Size']} pt`);
+       for(const p of Object.keys(codes))if(!codes[p].err&&o[p+'Type']!=='qr'&&o[p+'HRT'])line(`Barcode ${p.slice(1)} text: ${o[p+'Font']}, ${o[p+'FSize']} pt`);
       y-=2*MM;txt('/F1',9,ox,y,'COLOURS / NAMED SPOTS',dark);y-=5.5*MM;
       const sw=(label,hex,sp)=>{P('q');if(sp)P(`/CS${spIdx(o.cutName||'CUT',[0,1,0,0])} cs 1 scn`);else P(fc(hex));P(`${n4(ox)} ${n4(y-1*MM)} ${n4(3.5*MM)} ${n4(3.5*MM)} re f Q`);txt('/F2',9,ox+6*MM,y,label,dark);y-=5.5*MM};
       for(const p of Object.keys(info))sw(lbl(p)+' '+lab(o[p+'Col']),o[p+'Col']);
        for(const p of Object.keys(lines))sw('Straight text '+p.slice(1)+' '+lab(o[p+'Col']),o[p+'Col']);
+       for(const p of Object.keys(codes)){if(codes[p].err)continue;const nm=(o[p+'Type']==='qr'?'QR code ':'Barcode ')+p.slice(1);sw(nm+' '+lab(o[p+'Col']),o[p+'Col']);if(o[p+'BgOn'])sw(nm+' background '+lab(o[p+'Bg']),o[p+'Bg'])}
       if(o.sym!=='none')sw('Symbol '+lab(o.sCol),o.sCol);
       for(const n of allB())if(o['r'+n+'On'])sw('Border ring '+n+' '+lab(o['r'+n+'Col']),o['r'+n+'Col']);
       if(!o.transp)sw('Background '+lab(o.cBg),o.cBg);
@@ -614,7 +807,7 @@ async function buildPDF(){
   P('q');P(`${n4(k)} 0 0 ${n4(-k)} ${n4(ox)} ${n4(oy+A)} cm`);
   const opS=a=>a[0]==='M'?`${n4(a[1])} ${n4(a[2])} m`:a[0]==='L'?`${n4(a[1])} ${n4(a[2])} l`:a[0]==='C'?`${a.slice(1).map(n4).join(' ')} c`:'h';
   for(const p of S){
-    if(p.img){imgs.push(p);P(`q ${n4(p.w)} 0 0 ${n4(-p.h)} ${n4(p.x)} ${n4(p.y+p.h)} cm /Im${imgs.length-1} Do Q`);continue}
+    if(p.img){imgs.push(p);let rm='';if(p.rot){const a=p.rot*Math.PI/180,c=Math.cos(a),s=Math.sin(a);rm=`${n4(c)} ${n4(s)} ${n4(-s)} ${n4(c)} ${n4(p.rcx-p.rcx*c+p.rcy*s)} ${n4(p.rcy-p.rcx*s-p.rcy*c)} cm `}P(`q ${rm}${n4(p.w)} 0 0 ${n4(-p.h)} ${n4(p.x)} ${n4(p.y+p.h)} cm /Im${imgs.length-1} Do Q`);continue}
     P('q');if(p.fill)P(fc(p.fill));
     if(p.stroke){if(p.spot)P(`/CS${spIdx(o.cutName||'CUT',[0,1,0,0])} CS 1 SCN`);else P(sc(p.stroke));P(`${n4(p.sw)} w 1 J 1 j`)}
     P(p.cmds.map(opS).join(' '));P(p.fill&&p.stroke?'B':p.fill?'f':'S');P('Q');
@@ -660,9 +853,9 @@ $('mGo').onclick=async()=>{
 
 /* ---------- selection, keyboard nudging & dragging ---------- */
 var selEl=null,drag=null;
-const elKind=p=>p==='sym'?'sym':p[0]==='l'?'line':'ring';
-const elName=p=>p==='sym'?'Symbol / logo':p[0]==='l'?'Straight text '+p.slice(1):lbl(p);
-function elExists(p){if(!p)return false;if(p==='sym')return $('sym').value!=='none';if(p[0]==='l')return lnx.includes(p);return allT().includes(p)&&!!$(p+'Txt')}
+const elKind=p=>p==='sym'?'sym':p[0]==='l'?'line':p[0]==='c'?'code':'ring';
+const elName=p=>p==='sym'?'Symbol / logo':p[0]==='l'?'Straight text '+p.slice(1):p[0]==='c'?($(p+'Type').value==='qr'?'QR code ':'Barcode ')+p.slice(1):lbl(p);
+function elExists(p){if(!p)return false;if(p==='sym')return $('sym').value!=='none';if(p[0]==='l')return lnx.includes(p);if(p[0]==='c')return cdx.includes(p);return allT().includes(p)&&!!$(p+'Txt')}
 function cardOf(p){const e=$(p==='sym'?'sScale':p+'Txt');return e&&e.closest('.card')}
 function bump(id,d){const e=$(id);if(!e)return;let x=+e.value+d;if(/Rot$/.test(id))x=((x+180)%360+360)%360-180;e.value=Math.round(x*100)/100;const n=$(id+'_n');if(n)n.value=+(+e.value).toFixed(2)}
 function select(p){
@@ -673,8 +866,8 @@ function select(p){
 }
 function selBar(){
   const b=$('selbar');if(!selEl){b.classList.remove('on');b.innerHTML='';return}
-  const k=elKind(selEl),hint=k==='ring'?'←→ move along ring · ↑↓ raise / lower':k==='line'?'Arrows nudge · Shift = 1 mm · [ ] rotate':'Arrows nudge · Shift = 1 mm · drag to move';
-  b.innerHTML=`<b>${elName(selEl)}</b><span class="k">${hint}</span><button class="sm" data-n="-1,0" title="Left">←</button><button class="sm" data-n="0,-1" title="Up">↑</button><button class="sm" data-n="0,1" title="Down">↓</button><button class="sm" data-n="1,0" title="Right">→</button>`+(k==='line'?'<button class="sm" data-r="-1" title="Rotate anticlockwise">⟲</button><button class="sm" data-r="1" title="Rotate clockwise">⟳</button>':'')+'<button class="sm" data-x="1" title="Deselect (Esc)">✕</button>';
+  const k=elKind(selEl),hint=k==='ring'?'←→ move along ring · ↑↓ raise / lower':k==='line'||k==='code'?'Arrows nudge · Shift = 1 mm · [ ] rotate':'Arrows nudge · Shift = 1 mm · drag to move';
+  b.innerHTML=`<b>${elName(selEl)}</b><span class="k">${hint}</span><button class="sm" data-n="-1,0" title="Left">←</button><button class="sm" data-n="0,-1" title="Up">↑</button><button class="sm" data-n="0,1" title="Down">↓</button><button class="sm" data-n="1,0" title="Right">→</button>`+(k==='line'||k==='code'?'<button class="sm" data-r="-1" title="Rotate anticlockwise">⟲</button><button class="sm" data-r="1" title="Rotate clockwise">⟳</button>':'')+'<button class="sm" data-x="1" title="Deselect (Esc)">✕</button>';
   b.classList.add('on');
 }
 function drawSel(){
@@ -692,7 +885,7 @@ function drawSel(){
 function nudge(dx,dy,step){
   const p=selEl;if(!p)return;const k=elKind(p);
   if(k==='sym'){bump('sX',dx*step);bump('sY',dy*step)}
-  else if(k==='line'){bump(p+'X',dx*step);bump(p+'Y',dy*step)}
+  else if(k==='line'||k==='code'){bump(p+'X',dx*step);bump(p+'Y',dy*step)}
   else{const bot=$(p+'Pos').value==='bottom';if(dx)bump(p+'Rot',dx*(bot?-1:1)*(step>=1?10:1));if(dy)bump(p+'Off',-dy*step)}
   sched();
 }
@@ -759,7 +952,7 @@ document.addEventListener('focusin',e=>{const c=e.target.closest&&e.target.close
 
 /* ---------- boot ---------- */
 refreshFonts();applyState(DEF);
-try{const s=JSON.parse(localStorage.getItem('cts_state')||'null');if(s){uploaded=s._img||null;const keep=norm(s);Object.keys(keep).forEach(k=>{if(/Font$/.test(k)&&!FONT_DATA[keep[k]])keep[k]='Montserrat'});applyState(keep)}}catch(e){}
+try{const s=JSON.parse(localStorage.getItem('cts_state')||'null');if(s){uploaded=s._img||null;codeImgs=s._cimg||{};const keep=norm(s);Object.keys(keep).forEach(k=>{if(/Font$/.test(k)&&!FONT_DATA[keep[k]])keep[k]='Montserrat'});applyState(keep)}}catch(e){}
 upd();
 })();
 </script>
